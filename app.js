@@ -13,7 +13,7 @@
     },
   };
   let stars = store.get('stars', {});
-  let settings = store.get('settings', { tr: true });
+  let settings = { tr: true, theme: 'c', ...store.get('settings', {}) };
 
   /* ---------- Eigene Aufnahmen (IndexedDB) ---------- */
   const recs = new Map();
@@ -107,46 +107,43 @@
   const shuffle = (a) => { const b = a.slice(); for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; };
 
   /* ---------- Bildschirme ---------- */
-  let view = { name: 'home' };
+  let view = { name: 'learn', cat: CATEGORIES[0].id, idx: 0 };
 
   function go(next) {
+    if (recorder && next.name !== 'parent') recorder.stop();
     view = next;
     stopSound();
     render();
   }
 
   function render() {
-    const fn = { home: renderHome, mode: renderMode, learn: renderLearn, quiz: renderQuiz, result: renderResult, parent: renderParent }[view.name];
-    app.innerHTML = `<div class="screen">${fn()}</div>`;
-    if (view.name === 'parent') return;
-    if (view.name === 'home') bindGate();
+    const c = catById(view.cat);
+    document.body.style.setProperty('--tint', c.tint);
+    document.body.dataset.theme = settings.theme;
+    const fn = { learn: renderLearn, quiz: renderQuiz, result: renderResult, parent: renderParent }[view.name];
+    app.innerHTML = renderNav() + `<div class="content screen">${fn()}</div>`;
+    bindGate();
   }
 
-  function renderHome() {
-    const tiles = CATEGORIES.map((c) => `
-      <button class="tile" data-act="open" data-cat="${c.id}" style="background:${c.tint}" aria-label="${c.de}">
+  function renderNav() {
+    const items = CATEGORIES.map((c) => `
+      <button class="nav-item sk ${view.name !== 'parent' && c.id === view.cat ? 'active' : ''}" data-act="open" data-cat="${c.id}" aria-label="${c.de}">
         <span class="ico">${c.icon}</span>
-        <span class="nm-ar ar">${c.ar}</span>
-        <span class="nm">${c.de}</span>
         <span class="stars">${starsText(stars[c.id] || 0)}</span>
       </button>`).join('');
-    return `
-      <div class="home-head"><div class="ar">عَرَبِي</div><div class="de">Arabisch lernen</div></div>
-      <div class="tiles">${tiles}</div>
-      <button class="parent-gate" data-gate aria-label="Eltern">⚙️</button>`;
+    return `<nav class="nav sk">${items}<button class="parent-gate" data-gate aria-label="Eltern">⚙️</button></nav>`;
   }
 
-  function renderMode() {
-    const c = catById(view.cat);
-    return `
-      <div class="topbar"><button class="round-btn" data-act="home" aria-label="Zurück">🏠</button><span></span><span class="spacer"></span></div>
-      <div class="mode-wrap">
-        <div class="mode-title"><div class="ar">${c.ar}</div><div class="de">${c.de}</div></div>
-        <div class="mode-btns">
-          <button class="mode-btn" data-act="learn"><span class="ico">👀</span>Lernen</button>
-          <button class="mode-btn" data-act="quiz"><span class="ico">👂</span>Zuhören &amp; Finden<span class="stars">${starsText(stars[c.id] || 0)}</span></button>
-        </div>
-      </div>`;
+  function topbar(c, dots) {
+    const on = (n) => (view.name === n ? 'on' : '');
+    return `<div class="topbar">
+      <div class="tabs">
+        <button class="tab sk ${on('learn')}" data-act="learn">👀 Lernen</button>
+        <button class="tab sk ${on('quiz')}" data-act="quiz">👂 Finden</button>
+      </div>
+      ${dots}
+      <span class="cat-name"><span class="ar">${c.ar}</span><span class="de">${c.de}</span></span>
+    </div>`;
   }
 
   function dotsHtml(n, current) {
@@ -158,10 +155,10 @@
     const item = c.items[view.idx];
     const last = view.idx === c.items.length - 1;
     return `
-      <div class="topbar"><button class="round-btn" data-act="back-mode" aria-label="Zurück">🏠</button>${dotsHtml(c.items.length, view.idx)}<span class="spacer"></span></div>
+      ${topbar(c, dotsHtml(c.items.length, view.idx))}
       <div class="learn">
         <button class="nav-btn" data-act="prev" ${view.idx === 0 ? 'disabled' : ''} aria-label="Zurück">◀</button>
-        <button class="card-main" data-act="say" aria-label="Anhören">
+        <button class="card-main sk" data-act="say" aria-label="Anhören">
           ${visual(c, item, false)}
           <div class="word-ar ar">${item.ar}</div>
           ${settings.tr ? `<div class="word-tr">${item.tr}</div>` : ''}
@@ -187,9 +184,9 @@
   function renderQuiz() {
     const c = catById(view.cat);
     const r = view.rounds[view.i];
-    const opts = r.options.map((o) => `<button class="opt" data-act="pick" data-id="${o.id}" aria-label="${o.de}">${visual(c, o, true)}</button>`).join('');
+    const opts = r.options.map((o) => `<button class="opt sk" data-act="pick" data-id="${o.id}" aria-label="${o.de}">${visual(c, o, true)}</button>`).join('');
     return `
-      <div class="topbar"><button class="round-btn" data-act="back-mode" aria-label="Zurück">🏠</button>${dotsHtml(view.rounds.length, view.i)}<span class="spacer"></span></div>
+      ${topbar(c, dotsHtml(view.rounds.length, view.i))}
       <div class="quiz">
         <button class="speaker" data-act="ask" aria-label="Nochmal anhören">🔊</button>
         <div class="options">${opts}</div>
@@ -229,12 +226,14 @@
   }
 
   function renderResult() {
+    const c = catById(view.cat);
     return `
+      ${topbar(c, '<span></span>')}
       <div class="result">
         <div class="big-stars">${starsText(view.earned)}</div>
         <div class="msg ar" style="font-size:9vmin">يَا سَلَام!</div>
         <div class="msg">Super gemacht!</div>
-        <button class="pill" data-act="back-mode">Fertig</button>
+        <button class="pill" data-act="learn">Weiter</button>
       </div>`;
   }
 
@@ -258,10 +257,13 @@
         </div>`;
       }).join('')}`).join('');
     return `
-      <div class="topbar"><button class="round-btn" data-act="home" aria-label="Zurück">🏠</button><strong style="font-size:3.6vmin">Elternbereich</strong><span class="spacer"></span></div>
+      <div class="topbar"><button class="round-btn" data-act="learn" aria-label="Schließen">✕</button><strong style="font-size:3.6vmin">Elternbereich</strong><span class="spacer"></span></div>
       <div class="parent">
         <p class="hint">Hier kannst du die Wörter mit deiner eigenen Stimme aufnehmen (● starten, ■ beenden). Ohne Aufnahme liest die Sprachausgabe des iPads vor. Aufnahmen bleiben auf diesem Gerät.</p>
         <div class="toggle-row">
+          <button class="mini text" data-act="p-theme" data-t="a">${settings.theme === 'a' ? '● ' : ''}Stil Weich</button>
+          <button class="mini text" data-act="p-theme" data-t="b">${settings.theme === 'b' ? '● ' : ''}Stil Skizze</button>
+          <button class="mini text" data-act="p-theme" data-t="c">${settings.theme === 'c' ? '● ' : ''}Stil Mix</button>
           <button class="mini text" data-act="p-tr">Lautschrift: ${settings.tr ? 'an' : 'aus'}</button>
           <button class="mini text" data-act="p-reset">Sterne zurücksetzen</button>
         </div>
@@ -308,7 +310,7 @@
     const g = app.querySelector('[data-gate]');
     let t = null;
     const clear = () => { clearTimeout(t); t = null; };
-    g.addEventListener('pointerdown', () => { t = setTimeout(() => go({ name: 'parent' }), 2000); });
+    g.addEventListener('pointerdown', () => { t = setTimeout(() => go({ name: 'parent', cat: view.cat }), 2000); });
     ['pointerup', 'pointerleave', 'pointercancel'].forEach((e) => g.addEventListener(e, clear));
   }
 
@@ -318,10 +320,9 @@
     if (!el || el.disabled) return;
     const c = view.cat && catById(view.cat);
     switch (el.dataset.act) {
-      case 'home': if (recorder) recorder.stop(); go({ name: 'home' }); break;
-      case 'open': go({ name: 'mode', cat: el.dataset.cat }); break;
-      case 'back-mode': go({ name: 'mode', cat: view.cat }); break;
+      case 'open': { const nc = catById(el.dataset.cat); go({ name: 'learn', cat: nc.id, idx: 0 }); speak(nc, nc.items[0]); break; }
       case 'learn': go({ name: 'learn', cat: view.cat, idx: 0 }); speak(c, c.items[0]); break;
+      case 'p-theme': settings.theme = el.dataset.t; store.set('settings', settings); keepScroll(render); break;
       case 'prev': view.idx -= 1; render(); speak(c, c.items[view.idx]); break;
       case 'next': view.idx += 1; render(); speak(c, c.items[view.idx]); break;
       case 'say': speak(c, c.items[view.idx]); break;

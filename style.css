@@ -27,11 +27,11 @@ button { font: inherit; color: inherit; border: 0; background: none; cursor: poi
 body::before {
   content: ''; position: fixed; inset: 0; z-index: 0;
   background:
-    radial-gradient(62vmax 48vmax at 12% 18%, var(--tint) 0%, transparent 62%),
-    radial-gradient(54vmax 44vmax at 88% 12%, #CFE9E3 0%, transparent 60%),
-    radial-gradient(60vmax 46vmax at 78% 92%, #EBD6F2 0%, transparent 62%),
-    radial-gradient(48vmax 38vmax at 8% 95%, #FFF0B5 0%, transparent 60%),
-    #FFF6E9;
+    radial-gradient(70vmax 55vmax at 8% 12%, var(--tint) 0%, transparent 60%),
+    radial-gradient(60vmax 50vmax at 92% 8%, #BFE3F5 0%, transparent 60%),
+    radial-gradient(72vmax 56vmax at 82% 96%, #F6B9C9 0%, transparent 62%),
+    radial-gradient(56vmax 46vmax at 4% 96%, #FFD9A8 0%, transparent 60%),
+    #FFF8EF;
 }
 body::after {
   content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: .14; mix-blend-mode: multiply;
@@ -177,3 +177,47 @@ body::after {
   .tab { padding: 1.4vmin 2.6vmin; font-size: 3vmin; }
   .cat-name .de { display: none; }
 }
+
+/* =====================================================================
+   Stil-Varianten (Elternbereich → Stil). Standard = c (Mix)
+   a = Weich: nur organische, körnige Verläufe, keine Linien
+   b = Skizze: cremiges Off-White, kräftige Tuschelinie, flache Pastellflächen
+   c = Mix: Verläufe + Bleistift-Umrandung
+   ===================================================================== */
+
+/* ---- A: Weich ---- */
+body[data-theme="a"] { --card: rgba(255, 255, 255, .72); --hand: -apple-system, BlinkMacSystemFont, "SF Pro Rounded", "Segoe UI", sans-serif; }
+body[data-theme="a"]::before {
+  background:
+    radial-gradient(70vmax 55vmax at 8% 12%, var(--tint) 0%, transparent 60%),
+    radial-gradient(60vmax 50vmax at 92% 8%, #BFE3F5 0%, transparent 60%),
+    radial-gradient(72vmax 56vmax at 82% 96%, #F6B9C9 0%, transparent 62%),
+    radial-gradient(56vmax 46vmax at 4% 96%, #FFD9A8 0%, transparent 60%),
+    #FFF8EF;
+}
+body[data-theme="a"]::after { opacity: .24; }
+body[data-theme="a"] .sk::before, body[data-theme="a"] .sk::after { display: none; }
+body[data-theme="a"] .nav-item.active { background: rgba(255, 255, 255, .85); box-shadow: var(--shadow); }
+body[data-theme="a"] .swatch { border: 0; filter: none; box-shadow: var(--shadow); }
+body[data-theme="a"] .pip { filter: none; }
+body[data-theme="a"] .word-ar::after { display: none; }
+body[data-theme="a"] .word-ar { padding-bottom: 0; }
+
+/* ---- B: Skizze ---- */
+body[data-theme="b"] { --card: #FFFBF1; --accent: #D9694F; --accent-dark: #B8523A; --warm: #D9694F; --shadow: none; --ink: #231F20; }
+body[data-theme="b"]::before { background: #FAF3E3; }
+body[data-theme="b"]::after { opacity: .08; }
+body[data-theme="b"] .sk::before { border-width: .6vmin; opacity: 1; }
+body[data-theme="b"] .sk::after { display: none; }
+body[data-theme="b"] .nav-item::before, body[data-theme="b"] .tab::before { opacity: 0; }
+body[data-theme="b"] .nav-item.active::before, body[data-theme="b"] .tab.on::before { opacity: 1; }
+body[data-theme="b"] .card-main { background: var(--tint); }
+body[data-theme="b"] .opt { background: #FFFBF1; }
+body[data-theme="b"] .opt.ok { background: #DDEFCF; }
+body[data-theme="b"] .tab { background: #FFFBF1; }
+body[data-theme="b"] .tab.on { background: var(--accent); color: #fff; }
+body[data-theme="b"] .nav-item.active { background: var(--tint); }
+body[data-theme="b"] .numvis .big .ar { color: var(--accent); }
+body[data-theme="b"] .word-tr { color: var(--ink); }
+body[data-theme="b"] .nav-btn, body[data-theme="b"] .speaker, body[data-theme="b"] .pill { border: .6vmin solid var(--ink); }
+body[data-theme="b"] .swatch { border-width: .7vmin; }

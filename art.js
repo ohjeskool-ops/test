@@ -4,7 +4,7 @@
    ['d', x, y, r]      Punkt (Auge)           ['c', pfad, farbe] nur Farbe (Wangen)
    ['h', pfad]         heller Glanzstrich     ['t', x, y, größe, text] Schrift        */
 (() => {
-  const INK = '#3A3340';
+  const INK = '#2B2F3B';
   const ORANGE = '#F4A046', SAND = '#F2C879', CREAM = '#FFF3DC', PINK = '#F4A6B8', BLUE = '#8EC5E8';
   const GREEN = '#7DBB6B', RED = '#E0524B', YELLOW = '#F7D154', BROWN = '#A9795A', GREY = '#C9C3CF', WHITE = '#FFFFFF';
 
@@ -232,12 +232,12 @@
         case 's': out += `<path d="${op[1]}" fill="${op[2]}" stroke="none" transform="translate(2.4 2)"/><path d="${op[1]}" fill="none"/>`; break;
         case 'l': out += `<path d="${op[1]}" fill="none"/>`; break;
         case 'c': out += `<path d="${op[1]}" fill="${op[2]}" stroke="none"/>`; break;
-        case 'h': out += `<path d="${op[1]}" fill="none" stroke="#FFFFFF" stroke-width="3.4" opacity=".85"/>`; break;
+        case 'h': out += `<path d="${op[1]}" fill="none" stroke="#FFFFFF" stroke-width="3" opacity=".8"/>`; break;
         case 'd': out += `<circle cx="${op[1]}" cy="${op[2]}" r="${op[3]}" fill="${INK}" stroke="none"/>`; break;
-        case 't': out += `<text x="${op[1]}" y="${op[2]}" font-size="${op[3]}" font-weight="700" text-anchor="middle" fill="${INK}" stroke="none" font-family="'Marker Felt','Bradley Hand','Chalkboard SE',cursive">${op[4]}</text>`; break;
+        case 't': out += `<text x="${op[1]}" y="${op[2]}" font-size="${op[3]}" font-weight="700" text-anchor="middle" fill="${INK}" stroke="none" font-family="ui-rounded,'SF Pro Rounded',-apple-system,'Helvetica Neue',Arial,sans-serif">${op[4]}</text>`; break;
       }
     }
-    return `<svg class="art" viewBox="0 0 100 100" aria-hidden="true"><g filter="url(#sketch)" stroke="${INK}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">${out}</g></svg>`;
+    return `<svg class="art" viewBox="0 0 100 100" aria-hidden="true"><g filter="url(#sketch)" stroke="${INK}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${out}</g></svg>`;
   }
 
   /* ---------- Farben: gekritzelte Farbfläche ---------- */
@@ -266,7 +266,7 @@
       `<g filter="url(#sketch)" stroke-linecap="round" stroke-linejoin="round">` +
       `<g clip-path="url(#${id})"><path d="${d}" fill="${color}" opacity="${white ? 1 : .5}" stroke="none"/>` +
       `<path d="${z}" fill="none" stroke="${white ? '#E4DCCB' : color}" stroke-width="6.5"/></g>` +
-      `<path d="${d}" fill="none" stroke="${INK}" stroke-width="2.6"/></g></svg>`;
+      `<path d="${d}" fill="none" stroke="${INK}" stroke-width="2"/></g></svg>`;
   }
 
   window.Sketch = {

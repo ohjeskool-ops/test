@@ -22,7 +22,7 @@ export default function Page() {
   const [tag, setTag] = useState("");
   const [url, setUrl] = useState("");
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<{ text: string; info?: boolean } | null>(null);
+  const [msg, setMsg] = useState<{ text: string; info?: boolean; blocked?: boolean } | null>(null);
   const [current, setCurrent] = useState<Item | null>(null);
   const [tagDraft, setTagDraft] = useState("");
   const readerRef = useRef<HTMLDivElement>(null);
@@ -39,6 +39,15 @@ export default function Page() {
     const r = await api<{ items: ItemListEntry[] }>(`/api/items?${p}`);
     if (r.ok) setItems(r.data.items);
   }, [q, type, status, tag]);
+
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("open");
+    if (id) {
+      open(id);
+      window.history.replaceState(null, "", "/");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const t = setTimeout(reload, 200);
@@ -85,7 +94,7 @@ export default function Page() {
       await reload();
       open(r.data.id);
     } else {
-      setMsg({ text: r.data.error ?? "Import fehlgeschlagen." });
+      setMsg({ text: r.data.error ?? "Import fehlgeschlagen.", blocked: r.status === 502 });
       if (r.data.existingId) open(r.data.existingId);
     }
   }
@@ -136,7 +145,12 @@ export default function Page() {
             <input value={url} onChange={(e) => setUrl(e.target.value)} onKeyDown={(e) => e.key === "Enter" && add()} placeholder="Artikel-URL einfügen" inputMode="url" />
             <button className="btn" disabled={busy} onClick={add}>{busy ? "…" : "+ Neu"}</button>
           </div>
-          {msg && <div className={`msg ${msg.info ? "info" : ""}`}>{msg.text}</div>}
+          {msg && (
+            <div className={`msg ${msg.info ? "info" : ""}`}>
+              {msg.text}
+              {msg.blocked && <> Alternative: <a href="/import" target="_blank" style={{ textDecoration: "underline" }}>Lesezeichen für den Import aus dem Browser</a>.</>}
+            </div>
+          )}
           <div className="search"><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Volltextsuche …" /></div>
           <div className="filters">
             <Filter label="Alle" on={!status} set={() => setStatus("")} />

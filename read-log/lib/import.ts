@@ -18,7 +18,16 @@ interface ImportInput {
   tags?: unknown;
 }
 
-export async function importArticle(input: ImportInput): Promise<Item> {
+// Importe laufen nacheinander, damit die Duplikatprüfung bei gleichzeitigen Anfragen greift.
+let importQueue: Promise<unknown> = Promise.resolve();
+
+export function importArticle(input: ImportInput): Promise<Item> {
+  const run = importQueue.then(() => doImport(input), () => doImport(input));
+  importQueue = run.catch(() => undefined);
+  return run;
+}
+
+async function doImport(input: ImportInput): Promise<Item> {
   if (!input.url) throw new ImportError("Bitte eine URL angeben.");
   let normalized: string;
   try {

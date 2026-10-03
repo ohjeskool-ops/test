@@ -232,7 +232,7 @@
     return `
       <div class="result">
         <div class="big-stars">${starsText(view.earned)}</div>
-        <div class="msg ar" style="font-size:9vmin">أَحْسَنْتِ!</div>
+        <div class="msg ar" style="font-size:9vmin">يَا سَلَام!</div>
         <div class="msg">Super gemacht!</div>
         <button class="pill" data-act="back-mode">Fertig</button>
       </div>`;

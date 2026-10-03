@@ -13,7 +13,7 @@
     },
   };
   let stars = store.get('stars', {});
-  let settings = store.get('settings', { tr: true });
+  let settings = { tr: true, ...store.get('settings', {}) };
 
   /* ---------- Eigene Aufnahmen (IndexedDB) ---------- */
   const recs = new Map();
@@ -93,60 +93,64 @@
   function visual(cat, item, small) {
     let inner = '';
     if (cat.type === 'color') {
-      inner = `<div class="swatch" style="background:${item.color}"></div>`;
+      inner = Sketch.color(item.color);
     } else if (cat.type === 'number') {
       inner = `<div class="numvis"><div class="big"><span>${item.n}</span><span class="ar">${item.digit}</span></div>` +
         `<div class="pips">${'<i class="pip"></i>'.repeat(item.n)}</div></div>`;
     } else {
-      inner = `<div class="emoji">${item.emoji}</div>`;
+      inner = Sketch.motif(cat.id, item.id) || `<div class="emoji">${item.emoji}</div>`;
     }
     return `<div class="visual${small ? ' sm' : ''}">${inner}</div>`;
   }
 
-  const starsText = (n) => (n ? '⭐'.repeat(n) : '');
+  const svg = (body, cls = '') => `<svg class="icon ${cls}" viewBox="0 0 24 24" aria-hidden="true">${body}</svg>`;
+  const ICON = {
+    prev: svg('<path d="M14.5 5.5 8 12l6.5 6.5"/>'),
+    next: svg('<path d="M9.5 5.5 16 12l-6.5 6.5"/>'),
+    speaker: svg('<path d="M4 9.5v5h3.6L12.5 19V5L7.6 9.5H4z"/><path d="M16 9.2a4.2 4.2 0 0 1 0 5.6"/><path d="M18.6 6.6a8 8 0 0 1 0 10.8"/>'),
+    gear: svg('<circle cx="12" cy="12" r="3"/><path d="M12 3.5v3M12 17.5v3M3.5 12h3M17.5 12h3M6 6l2.1 2.1M15.9 15.9 18 18M18 6l-2.1 2.1M8.1 15.9 6 18"/>'),
+  };
+  const STAR = '<svg class="star" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.5l-5.4 3 1.2-6L3.3 9.3l6.1-.7z"/></svg>';
+  const starsText = (n) => (n ? STAR.repeat(n) : '');
   const shuffle = (a) => { const b = a.slice(); for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; };
 
   /* ---------- Bildschirme ---------- */
-  let view = { name: 'home' };
+  let view = { name: 'learn', cat: CATEGORIES[0].id, idx: 0 };
 
   function go(next) {
+    if (recorder && next.name !== 'parent') recorder.stop();
     view = next;
     stopSound();
     render();
   }
 
   function render() {
-    const fn = { home: renderHome, mode: renderMode, learn: renderLearn, quiz: renderQuiz, result: renderResult, parent: renderParent }[view.name];
-    app.innerHTML = `<div class="screen">${fn()}</div>`;
-    if (view.name === 'parent') return;
-    if (view.name === 'home') bindGate();
+    const c = catById(view.cat);
+    document.body.style.setProperty('--tint', c.tint);
+    const fn = { learn: renderLearn, quiz: renderQuiz, result: renderResult, parent: renderParent }[view.name];
+    app.innerHTML = renderNav() + `<div class="content screen">${fn()}</div>`;
+    bindGate();
   }
 
-  function renderHome() {
-    const tiles = CATEGORIES.map((c) => `
-      <button class="tile" data-act="open" data-cat="${c.id}" style="background:${c.tint}" aria-label="${c.de}">
-        <span class="ico">${c.icon}</span>
-        <span class="nm-ar ar">${c.ar}</span>
-        <span class="nm">${c.de}</span>
+  function renderNav() {
+    const items = CATEGORIES.map((c) => `
+      <button class="nav-item ${view.name !== 'parent' && c.id === view.cat ? 'active' : ''}" data-act="open" data-cat="${c.id}" aria-label="${c.de}">
+        <span class="ico">${Sketch.nav(c.id) || c.icon}</span>
         <span class="stars">${starsText(stars[c.id] || 0)}</span>
       </button>`).join('');
-    return `
-      <div class="home-head"><div class="ar">عَرَبِي</div><div class="de">Arabisch lernen</div></div>
-      <div class="tiles">${tiles}</div>
-      <button class="parent-gate" data-gate aria-label="Eltern">⚙️</button>`;
+    return `<nav class="nav">${items}<button class="parent-gate" data-gate aria-label="Eltern">${ICON.gear}</button></nav>`;
   }
 
-  function renderMode() {
-    const c = catById(view.cat);
-    return `
-      <div class="topbar"><button class="round-btn" data-act="home" aria-label="Zurück">🏠</button><span></span><span class="spacer"></span></div>
-      <div class="mode-wrap">
-        <div class="mode-title"><div class="ar">${c.ar}</div><div class="de">${c.de}</div></div>
-        <div class="mode-btns">
-          <button class="mode-btn" data-act="learn"><span class="ico">👀</span>Lernen</button>
-          <button class="mode-btn" data-act="quiz"><span class="ico">👂</span>Zuhören &amp; Finden<span class="stars">${starsText(stars[c.id] || 0)}</span></button>
-        </div>
-      </div>`;
+  function topbar(c, dots) {
+    const on = (n) => (view.name === n ? 'on' : '');
+    return `<div class="topbar">
+      <div class="seg">
+        <button class="seg-i ${on('learn')}" data-act="learn">Lernen</button>
+        <button class="seg-i ${on('quiz')}" data-act="quiz">Finden</button>
+      </div>
+      ${dots}
+      <span class="cat-name"><span class="ar">${c.ar}</span><span class="de">${c.de}</span></span>
+    </div>`;
   }
 
   function dotsHtml(n, current) {
@@ -158,9 +162,9 @@
     const item = c.items[view.idx];
     const last = view.idx === c.items.length - 1;
     return `
-      <div class="topbar"><button class="round-btn" data-act="back-mode" aria-label="Zurück">🏠</button>${dotsHtml(c.items.length, view.idx)}<span class="spacer"></span></div>
+      ${topbar(c, dotsHtml(c.items.length, view.idx))}
       <div class="learn">
-        <button class="nav-btn" data-act="prev" ${view.idx === 0 ? 'disabled' : ''} aria-label="Zurück">◀</button>
+        <button class="nav-btn" data-act="prev" ${view.idx === 0 ? 'disabled' : ''} aria-label="Zurück">${ICON.prev}</button>
         <button class="card-main" data-act="say" aria-label="Anhören">
           ${visual(c, item, false)}
           <div class="word-ar ar">${item.ar}</div>
@@ -168,8 +172,8 @@
           <div class="word-de">${item.de}</div>
         </button>
         ${last
-          ? '<button class="nav-btn quiz" data-act="quiz" aria-label="Zum Quiz">Quiz ▶</button>'
-          : '<button class="nav-btn" data-act="next" aria-label="Weiter">▶</button>'}
+          ? `<button class="nav-btn quiz" data-act="quiz" aria-label="Zum Quiz">Quiz ${ICON.next}</button>`
+          : `<button class="nav-btn" data-act="next" aria-label="Weiter">${ICON.next}</button>`}
       </div>`;
   }
 
@@ -189,9 +193,9 @@
     const r = view.rounds[view.i];
     const opts = r.options.map((o) => `<button class="opt" data-act="pick" data-id="${o.id}" aria-label="${o.de}">${visual(c, o, true)}</button>`).join('');
     return `
-      <div class="topbar"><button class="round-btn" data-act="back-mode" aria-label="Zurück">🏠</button>${dotsHtml(view.rounds.length, view.i)}<span class="spacer"></span></div>
+      ${topbar(c, dotsHtml(view.rounds.length, view.i))}
       <div class="quiz">
-        <button class="speaker" data-act="ask" aria-label="Nochmal anhören">🔊</button>
+        <button class="speaker" data-act="ask" aria-label="Nochmal anhören">${ICON.speaker}</button>
         <div class="options">${opts}</div>
         <div class="praise" id="praise"></div>
       </div>`;
@@ -209,7 +213,7 @@
     view.busy = true;
     btn.classList.add('ok');
     app.querySelectorAll('.opt').forEach((o) => { o.classList.add('locked'); if (o !== btn) o.classList.add('dim'); });
-    document.getElementById('praise').textContent = '⭐';
+    document.getElementById('praise').innerHTML = STAR;
     speak(c, r.target);
     setTimeout(() => {
       if (view.name !== 'quiz') return;
@@ -229,13 +233,15 @@
   }
 
   function renderResult() {
+    const c = catById(view.cat);
     return `
-      <div class="result">
+      ${topbar(c, '<span></span>')}
+      <div class="result"><div class="result-card">
         <div class="big-stars">${starsText(view.earned)}</div>
         <div class="msg ar" style="font-size:9vmin">يَا سَلَام!</div>
         <div class="msg">Super gemacht!</div>
-        <button class="pill" data-act="back-mode">Fertig</button>
-      </div>`;
+        <button class="pill" data-act="learn">Weiter</button>
+      </div></div>`;
   }
 
   /* ---------- Elternbereich ---------- */
@@ -258,7 +264,7 @@
         </div>`;
       }).join('')}`).join('');
     return `
-      <div class="topbar"><button class="round-btn" data-act="home" aria-label="Zurück">🏠</button><strong style="font-size:3.6vmin">Elternbereich</strong><span class="spacer"></span></div>
+      <div class="topbar"><button class="round-btn" data-act="learn" aria-label="Schließen">✕</button><strong style="font-size:3.6vmin">Elternbereich</strong><span class="spacer"></span></div>
       <div class="parent">
         <p class="hint">Hier kannst du die Wörter mit deiner eigenen Stimme aufnehmen (● starten, ■ beenden). Ohne Aufnahme liest die Sprachausgabe des iPads vor. Aufnahmen bleiben auf diesem Gerät.</p>
         <div class="toggle-row">
@@ -308,7 +314,7 @@
     const g = app.querySelector('[data-gate]');
     let t = null;
     const clear = () => { clearTimeout(t); t = null; };
-    g.addEventListener('pointerdown', () => { t = setTimeout(() => go({ name: 'parent' }), 2000); });
+    g.addEventListener('pointerdown', () => { t = setTimeout(() => go({ name: 'parent', cat: view.cat }), 2000); });
     ['pointerup', 'pointerleave', 'pointercancel'].forEach((e) => g.addEventListener(e, clear));
   }
 
@@ -318,9 +324,7 @@
     if (!el || el.disabled) return;
     const c = view.cat && catById(view.cat);
     switch (el.dataset.act) {
-      case 'home': if (recorder) recorder.stop(); go({ name: 'home' }); break;
-      case 'open': go({ name: 'mode', cat: el.dataset.cat }); break;
-      case 'back-mode': go({ name: 'mode', cat: view.cat }); break;
+      case 'open': { const nc = catById(el.dataset.cat); go({ name: 'learn', cat: nc.id, idx: 0 }); speak(nc, nc.items[0]); break; }
       case 'learn': go({ name: 'learn', cat: view.cat, idx: 0 }); speak(c, c.items[0]); break;
       case 'prev': view.idx -= 1; render(); speak(c, c.items[view.idx]); break;
       case 'next': view.idx += 1; render(); speak(c, c.items[view.idx]); break;

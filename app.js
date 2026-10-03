@@ -13,7 +13,7 @@
     },
   };
   let stars = store.get('stars', {});
-  let settings = { tr: true, theme: 'c', ...store.get('settings', {}) };
+  let settings = { tr: true, theme: 'a', ...store.get('settings', {}) };
 
   /* ---------- Eigene Aufnahmen (IndexedDB) ---------- */
   const recs = new Map();
@@ -93,12 +93,12 @@
   function visual(cat, item, small) {
     let inner = '';
     if (cat.type === 'color') {
-      inner = `<div class="swatch" style="background:${item.color}"></div>`;
+      inner = Sketch.color(item.color);
     } else if (cat.type === 'number') {
       inner = `<div class="numvis"><div class="big"><span>${item.n}</span><span class="ar">${item.digit}</span></div>` +
         `<div class="pips">${'<i class="pip"></i>'.repeat(item.n)}</div></div>`;
     } else {
-      inner = `<div class="emoji">${item.emoji}</div>`;
+      inner = Sketch.motif(cat.id, item.id) || `<div class="emoji">${item.emoji}</div>`;
     }
     return `<div class="visual${small ? ' sm' : ''}">${inner}</div>`;
   }
@@ -128,7 +128,7 @@
   function renderNav() {
     const items = CATEGORIES.map((c) => `
       <button class="nav-item sk ${view.name !== 'parent' && c.id === view.cat ? 'active' : ''}" data-act="open" data-cat="${c.id}" aria-label="${c.de}">
-        <span class="ico">${c.icon}</span>
+        <span class="ico">${Sketch.nav(c.id) || c.icon}</span>
         <span class="stars">${starsText(stars[c.id] || 0)}</span>
       </button>`).join('');
     return `<nav class="nav sk">${items}<button class="parent-gate" data-gate aria-label="Eltern">⚙️</button></nav>`;

@@ -71,7 +71,8 @@ body::after {
 .nav-item.active { background: var(--tint); }
 .nav-item.active::before { opacity: .85; }
 .nav-item.active::after { opacity: .35; }
-.nav-item .ico { font-size: 7vmin; line-height: 1.1; }
+.nav-item .ico { font-size: 7vmin; line-height: 1.1; height: 8.5vmin; display: grid; place-items: center; }
+.nav-item .ico .art { width: 8.5vmin; height: 8.5vmin; }
 .nav-item .stars { font-size: 2vmin; height: 2.6vmin; letter-spacing: .2vmin; }
 .nav-item:active { transform: scale(.95); }
 .parent-gate { width: 9vmin; height: 7vmin; opacity: .15; font-size: 3.6vmin; margin-top: 1vmin; }
@@ -79,14 +80,14 @@ body::after {
 /* ---------- Kopfleiste ---------- */
 .topbar { display: flex; align-items: center; justify-content: space-between; gap: 2vmin; min-height: 10vmin; margin-bottom: 1vmin; }
 .tabs { display: flex; gap: 2vmin; }
-.tab { padding: 1.6vmin 3.4vmin; border-radius: 6vmin; background: var(--card); font-size: 3.4vmin; font-weight: 700; }
+.tab { white-space: nowrap; padding: 1.6vmin 3.4vmin; border-radius: 6vmin; background: var(--card); font-size: 3.4vmin; font-weight: 700; }
 .tab.on { background: var(--accent); color: #fff; }
 .tab:active { transform: scale(.96); }
 .tab::before, .tab::after { opacity: 0; }
 .tab.on::before { opacity: .85; } .tab.on::after { opacity: .35; }
 .cat-name { font-size: 3.4vmin; color: var(--soft); display: flex; align-items: center; gap: 1.2vmin; white-space: nowrap; }
 .cat-name .ar { font-size: 4.6vmin; color: var(--ink); }
-.dots { display: flex; gap: 1.1vmin; flex-wrap: wrap; justify-content: center; }
+.dots { display: flex; gap: 1.1vmin; flex-wrap: nowrap; justify-content: center; }
 .dot { width: 1.8vmin; height: 1.8vmin; border-radius: 50%; background: rgba(58, 51, 64, .15); }
 .dot.on { background: var(--warm); transform: scale(1.25); }
 .dot.done { background: var(--accent); opacity: .5; }
@@ -104,13 +105,13 @@ body::after {
 .visual.sm { height: 22vmin; }
 .emoji { font-size: 30vmin; line-height: 1; }
 .sm .emoji { font-size: 17vmin; }
-.swatch { width: min(36vmin, 100%); aspect-ratio: 1; border-radius: 7vmin; border: .6vmin solid var(--ink); filter: url(#wobble); }
-.sm .swatch { width: min(19vmin, 100%); border-radius: 4vmin; }
+.art { display: block; width: 38vmin; height: 38vmin; overflow: visible; }
+.sm .art { width: 22vmin; height: 22vmin; }
 .numvis { display: flex; flex-direction: column; align-items: center; gap: 1.5vmin; }
 .numvis .big { font-size: 22vmin; font-weight: 800; line-height: 1; display: flex; gap: 4vmin; align-items: baseline; }
 .numvis .big .ar { color: var(--accent); }
 .numvis .pips { display: flex; flex-wrap: wrap; justify-content: center; gap: 1.2vmin; max-width: 40vmin; }
-.pip { width: 3.6vmin; height: 3.6vmin; border-radius: 50%; background: var(--warm); filter: url(#wobble); }
+.pip { width: 3.6vmin; height: 3.6vmin; border-radius: 50%; background: var(--warm); border: .45vmin solid var(--ink); filter: url(#wobble); }
 .sm .numvis .big { font-size: 8vmin; gap: 1.6vmin; }
 .sm .numvis .pips { max-width: 21vmin; gap: .7vmin; }
 .sm .pip { width: 2.2vmin; height: 2.2vmin; }
@@ -174,7 +175,10 @@ body::after {
   .nav-item .ico { font-size: 6.4vmin; }
   .nav-btn { width: 11vmin; height: 11vmin; font-size: 5vmin; }
   .nav-btn.quiz { height: 11vmin; font-size: 3.4vmin; }
-  .tab { padding: 1.4vmin 2.6vmin; font-size: 3vmin; }
+  .tab { padding: 1.4vmin 2.4vmin; font-size: 2.8vmin; }
+  .dots { gap: .7vmin; }
+  .dot { width: 1.4vmin; height: 1.4vmin; }
+  .topbar { gap: 1vmin; }
   .cat-name .de { display: none; }
 }
 

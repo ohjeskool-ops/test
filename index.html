@@ -25,10 +25,15 @@
       <feTurbulence type="fractalNoise" baseFrequency="0.024" numOctaves="2" seed="11" result="n"/>
       <feDisplacementMap in="SourceGraphic" in2="n" scale="9" xChannelSelector="R" yChannelSelector="G"/>
     </filter>
+    <filter id="sketch" x="-8%" y="-8%" width="116%" height="116%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="2" seed="7" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="1.5" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
   </defs>
 </svg>
 <main id="app" aria-live="polite"></main>
 <script src="data.js"></script>
+<script src="art.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

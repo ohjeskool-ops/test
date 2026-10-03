@@ -46,7 +46,7 @@ export function matches(item: Item, q: ListQuery): boolean {
   return terms.every((t) => hay.includes(t));
 }
 
-export const store: Store = {
+export const fileStore: Store = {
   list: async (query) =>
     (await load())
       .filter((i) => matches(i, query))

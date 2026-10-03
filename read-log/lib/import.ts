@@ -2,8 +2,8 @@ import { randomUUID } from "node:crypto";
 import { extractArticle } from "./extract-article";
 import { hashText, normalizeUrl, parseTags } from "./normalize";
 import { safeFetch } from "./safe-fetch";
-import { store } from "./store";
-import type { Item } from "./types";
+import { isDuplicateError } from "./supabase-store";
+import type { Item, Store } from "./types";
 
 export class ImportError extends Error {
   constructor(message: string, public status = 400, public existing?: Item) {
@@ -21,13 +21,13 @@ interface ImportInput {
 // Importe laufen nacheinander, damit die Duplikatprüfung bei gleichzeitigen Anfragen greift.
 let importQueue: Promise<unknown> = Promise.resolve();
 
-export function importArticle(input: ImportInput): Promise<Item> {
-  const run = importQueue.then(() => doImport(input), () => doImport(input));
+export function importArticle(store: Store, input: ImportInput): Promise<Item> {
+  const run = importQueue.then(() => doImport(store, input), () => doImport(store, input));
   importQueue = run.catch(() => undefined);
   return run;
 }
 
-async function doImport(input: ImportInput): Promise<Item> {
+async function doImport(store: Store, input: ImportInput): Promise<Item> {
   if (!input.url) throw new ImportError("Bitte eine URL angeben.");
   let normalized: string;
   try {
@@ -60,20 +60,28 @@ async function doImport(input: ImportInput): Promise<Item> {
     if (same) throw new ImportError("Derselbe Inhalt ist unter einer anderen URL schon gespeichert.", 409, same);
   }
 
-  return store.create({
-    id: randomUUID(),
-    type: "article",
-    title,
-    source,
-    url: normalized,
-    normalizedUrl: normalized,
-    contentHash,
-    createdAt: new Date().toISOString(),
-    tags: parseTags(input.tags),
-    status: "unread",
-    textStatus: blocks.length > 0 ? "ok" : "missing",
-    blocks,
-    readPosition: 0,
-    summary: null,
-  });
+  try {
+    return await store.create({
+      id: randomUUID(),
+      type: "article",
+      title,
+      source,
+      url: normalized,
+      normalizedUrl: normalized,
+      contentHash,
+      createdAt: new Date().toISOString(),
+      tags: parseTags(input.tags),
+      status: "unread",
+      textStatus: blocks.length > 0 ? "ok" : "missing",
+      blocks,
+      readPosition: 0,
+      summary: null,
+    });
+  } catch (e) {
+    if (isDuplicateError(e)) {
+      const existing = await store.findByUrl(normalized);
+      throw new ImportError("Dieser Link ist schon in der Bibliothek.", 409, existing ?? undefined);
+    }
+    throw e;
+  }
 }

@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import { ImportError, importArticle } from "@/lib/import";
-import { store } from "@/lib/store";
+import { getStore, unauthorized } from "@/lib/get-store";
 import type { ContentType, ReadStatus } from "@/lib/types";
 
 export const runtime = "nodejs";
 
 export async function GET(req: Request) {
+  const store = await getStore();
+  if (!store) return unauthorized();
   const p = new URL(req.url).searchParams;
   const items = await store.list({
     q: p.get("q") ?? undefined,
@@ -17,9 +19,11 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  const store = await getStore();
+  if (!store) return unauthorized();
   const body = await req.json().catch(() => ({}));
   try {
-    const item = await importArticle({ url: body.url, html: body.html, tags: body.tags });
+    const item = await importArticle(store, { url: body.url, html: body.html, tags: body.tags });
     return NextResponse.json({ id: item.id, textStatus: item.textStatus }, { status: 201 });
   } catch (e) {
     if (e instanceof ImportError) {

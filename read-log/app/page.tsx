@@ -108,6 +108,12 @@ export default function Page() {
     }
   }
 
+  async function signOut() {
+    const { createClient } = await import("@/lib/supabase/browser");
+    await createClient().auth.signOut();
+    window.location.href = "/login";
+  }
+
   async function remove() {
     if (!current || !confirm(`„${current.title}“ endgültig löschen?`)) return;
     await api(`/api/items/${current.id}`, { method: "DELETE" });
@@ -126,6 +132,7 @@ export default function Page() {
         <h1>read-log</h1>
         <div className="right">
           <span>{items.length} Inhalte</span>
+          {process.env.NEXT_PUBLIC_SUPABASE_URL && <button className="txt-btn" onClick={signOut}>Abmelden</button>}
           <button className="txt-btn desktop-only" onClick={() => setChatOpen((o) => !o)}>{chatOpen ? "Chat ausblenden »" : "« Chat einblenden"}</button>
         </div>
       </header>

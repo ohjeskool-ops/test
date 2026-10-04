@@ -225,6 +225,40 @@
   ART['nav/essen'] = ART['essen/apfel'];
   ART['nav/gefuehle'] = ART['gefuehle/froh'];
 
+  /* ---------- Spiele ---------- */
+  ART['game/suche'] = [
+    ['s', Ci(42, 42, 24), '#D6ECFA'], ['h', 'M30 34 Q34 26 42 24'],
+    ['s', 'M60 58 L84 82 L77 89 L53 65 Z', BROWN],
+  ];
+  ART['game/zaehlen'] = [
+    ['s', Ci(26, 62, 14), RED], ['s', Ci(50, 44, 14), ORANGE], ['s', Ci(74, 62, 14), YELLOW],
+    ['l', 'M26 86 L26 90'], ['l', 'M50 68 L50 90'], ['l', 'M74 86 L74 90'],
+    ['t', 26, 67, 16, '1'], ['t', 50, 49, 16, '2'], ['t', 74, 67, 16, '3'],
+  ];
+  ART['game/geben'] = [
+    ['s', Ci(40, 46, 11), RED], ['s', Ci(62, 44, 11), GREEN], ['s', Ci(51, 32, 11), YELLOW],
+    ['s', 'M16 52 L84 52 L75 88 L25 88 Z', '#E2A55C'], ['l', 'M24 62 L76 62'], ['l', 'M30 72 L70 72'],
+  ];
+  ART['game/malen'] = [
+    ['s', 'M50 14 C26 14 10 32 14 54 C18 76 40 88 56 82 C66 78 58 66 66 62 C76 58 90 62 90 46 C90 26 72 14 50 14 Z', '#F6E3C8'],
+    ['s', Ci(34, 38, 7), RED], ['s', Ci(54, 28, 7), YELLOW], ['s', Ci(74, 38, 7), BLUE], ['s', Ci(30, 60, 7), GREEN],
+  ];
+
+  /* ---------- Ausmal-Bild: einfache Fläche je Region ---------- */
+  const SCENE = [
+    ['sky', 'M0 0 L140 0 L140 100 L0 100 Z', '#F3F8FC'],
+    ['sun', Ci(112, 24, 13), '#FFFBF2'],
+    ['cloud', 'M22 42 C12 42 12 30 22 30 C22 20 38 18 42 28 C50 22 62 28 58 38 C66 40 64 48 56 48 L26 48 C18 48 16 42 22 42 Z', '#FFFBF2'],
+    ['ground', 'M0 78 Q40 66 80 74 T140 70 L140 100 L0 100 Z', '#FFFBF2'],
+    ['wall', 'M44 54 L44 84 L92 84 L92 54 Z', '#FFFBF2'],
+    ['roof', 'M38 56 L68 30 L98 56 Z', '#FFFBF2'],
+    ['door', 'M62 66 L62 84 L74 84 L74 66 Z', '#FFFBF2'],
+    ['window', 'M50 62 L58 62 L58 70 L50 70 Z', '#FFFBF2'],
+    ['trunk', 'M112 62 L112 84 L120 84 L120 62 Z', '#FFFBF2'],
+    ['crown', E(116, 48, 17, 16), '#FFFBF2'],
+    ['flower', Ci(22, 76, 6), '#FFFBF2'],
+  ];
+
   function render(ops) {
     let out = '';
     for (const op of ops) {
@@ -269,7 +303,16 @@
       `<path d="${d}" fill="none" stroke="${INK}" stroke-width="2"/></g></svg>`;
   }
 
+  function scene(fills) {
+    const regions = SCENE.map(([id, d, def]) =>
+      `<path class="region" data-act="m-fill" data-r="${id}" d="${d}" fill="${fills[id] || def}"/>`).join('');
+    return `<svg class="scene" viewBox="-2 -2 144 104" aria-label="Ausmalbild"><g filter="url(#sketch)" stroke="${INK}" stroke-width="1.5" stroke-linejoin="round">${regions}` +
+      `<path d="M22 82 L22 94 M22 88 Q14 86 12 80 M22 88 Q30 86 32 80" fill="none" stroke-linecap="round" pointer-events="none"/></g></svg>`;
+  }
+
   window.Sketch = {
+    get: (key) => (ART[key] ? render(ART[key]) : null),
+    scene,
     color: colorSketch,
     motif: (catId, itemId) => (ART[`${catId}/${itemId}`] ? render(ART[`${catId}/${itemId}`]) : null),
     nav: (catId) => (ART[`nav/${catId}`] ? render(ART[`nav/${catId}`]) : null),

@@ -33,3 +33,16 @@ create policy "eigene Inhalte lesen" on public.items for select to authenticated
 create policy "eigene Inhalte anlegen" on public.items for insert to authenticated with check ((select auth.uid()) = user_id);
 create policy "eigene Inhalte ändern" on public.items for update to authenticated using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
 create policy "eigene Inhalte löschen" on public.items for delete to authenticated using ((select auth.uid()) = user_id);
+
+-- PIN-Anmeldung: Begrenzung auf 5 Versuche pro 15 Minuten. Abgelehnte Versuche werden nicht gezählt,
+-- damit niemand den Besitzer durch Dauerbeschuss aussperren kann.
+create table public.pin_attempts (at timestamptz not null default now());
+alter table public.pin_attempts enable row level security; -- bewusst ohne Policies
+
+create function public.pin_check() returns boolean language sql volatile security definer set search_path = '' as '
+  with recent as (select count(*) as c from public.pin_attempts where at > now() - interval ''15 minutes''),
+       ins as (insert into public.pin_attempts (at) select now() from recent where c < 5 returning 1),
+       del as (delete from public.pin_attempts where at < now() - interval ''1 day'' returning 1)
+  select (select c from recent) < 5';
+revoke all on function public.pin_check() from public;
+grant execute on function public.pin_check() to anon, authenticated;

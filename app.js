@@ -108,6 +108,8 @@
     prev: svg('<path d="M14.5 5.5 8 12l6.5 6.5"/>'),
     next: svg('<path d="M9.5 5.5 16 12l-6.5 6.5"/>'),
     speaker: svg('<path d="M4 9.5v5h3.6L12.5 19V5L7.6 9.5H4z"/><path d="M16 9.2a4.2 4.2 0 0 1 0 5.6"/><path d="M18.6 6.6a8 8 0 0 1 0 10.8"/>'),
+    check: svg('<path d="m5 12.5 4.5 4.5L19 7.5"/>'),
+    undo: svg('<path d="M4.5 12a7.5 7.5 0 1 0 2.4-5.5"/><path d="M4.5 4.5v4.8h4.8"/>'),
     gear: svg('<circle cx="12" cy="12" r="3"/><path d="M12 3.5v3M12 17.5v3M3.5 12h3M17.5 12h3M6 6l2.1 2.1M15.9 15.9 18 18M18 6l-2.1 2.1M8.1 15.9 6 18"/>'),
   };
   const STAR = '<svg class="star" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.5l-5.4 3 1.2-6L3.3 9.3l6.1-.7z"/></svg>';
@@ -127,7 +129,7 @@
   function render() {
     const c = catById(view.cat);
     document.body.style.setProperty('--tint', c.tint);
-    const fn = { learn: renderLearn, quiz: renderQuiz, result: renderResult, parent: renderParent }[view.name];
+    const fn = { learn: renderLearn, quiz: renderQuiz, result: renderResult, parent: renderParent, games: renderGames, game: renderGame }[view.name];
     app.innerHTML = renderNav() + `<div class="content screen">${fn()}</div>`;
     bindGate();
   }
@@ -141,15 +143,19 @@
     return `<nav class="nav">${items}<button class="parent-gate" data-gate aria-label="Eltern">${ICON.gear}</button></nav>`;
   }
 
-  function topbar(c, dots) {
-    const on = (n) => (view.name === n ? 'on' : '');
+  const currentTab = () => ({ learn: 'learn', quiz: 'quiz', games: 'play', game: 'play', result: view.tab }[view.name] || 'learn');
+
+  function topbar(c, dots, label) {
+    const tab = currentTab();
+    const on = (n) => (tab === n ? 'on' : '');
     return `<div class="topbar">
       <div class="seg">
         <button class="seg-i ${on('learn')}" data-act="learn">Lernen</button>
         <button class="seg-i ${on('quiz')}" data-act="quiz">Finden</button>
+        <button class="seg-i ${on('play')}" data-act="games">Spielen</button>
       </div>
       ${dots}
-      <span class="cat-name"><span class="ar">${c.ar}</span><span class="de">${c.de}</span></span>
+      <span class="cat-name"><span class="ar">${c.ar}</span><span class="de">${label || c.de}</span></span>
     </div>`;
   }
 
@@ -227,7 +233,7 @@
         const earned = good === view.rounds.length ? 3 : good >= view.rounds.length - 2 ? 2 : 1;
         stars[c.id] = Math.max(stars[c.id] || 0, earned);
         store.set('stars', stars);
-        go({ name: 'result', cat: c.id, earned });
+        go({ name: 'result', cat: c.id, earned, tab: 'quiz', next: 'learn' });
       }
     }, 1600);
   }
@@ -240,8 +246,211 @@
         <div class="big-stars">${starsText(view.earned)}</div>
         <div class="msg ar" style="font-size:9vmin">يَا سَلَام!</div>
         <div class="msg">Super gemacht!</div>
-        <button class="pill" data-act="learn">Weiter</button>
+        <button class="pill" data-act="${view.next || 'learn'}">Weiter</button>
       </div></div>`;
+  }
+
+  /* ---------- Spielen ---------- */
+  const GAMES = [
+    { id: 'suche', de: 'Such mich!' },
+    { id: 'zaehlen', de: 'Zähl mit!' },
+    { id: 'geben', de: 'Gib mir …' },
+    { id: 'malen', de: 'Ausmalen' },
+  ];
+  const objects = () => ['tiere', 'essen'].flatMap((cid) => catById(cid).items.map((it) => ({ cid, it })));
+  const pickObjects = (k) => shuffle(objects()).slice(0, k);
+  const numbers = (max, k) => shuffle(Array.from({ length: max }, (_, i) => i + 1)).slice(0, k).sort((a, b) => a - b);
+
+  function later(fn, ms) {
+    const v = view;
+    setTimeout(() => { if (view === v) fn(); }, ms);
+  }
+  function shake(el) {
+    el.classList.remove('wrong');
+    void el.offsetWidth;
+    el.classList.add('wrong');
+  }
+  function scatter(n) {
+    const tall = window.innerHeight > window.innerWidth;
+    const cols = tall ? 3 : 4, rows = tall ? 4 : 3;
+    const jit = (k) => (Math.random() - 0.5) * k;
+    return shuffle(Array.from({ length: cols * rows }, (_, i) => i)).slice(0, n).map((slot) => ({
+      x: ((slot % cols + 0.5) / cols) * 100 + jit((100 / cols) * 0.3),
+      y: ((Math.floor(slot / cols) + 0.5) / rows) * 100 + jit((100 / rows) * 0.3),
+      rot: jit(14),
+    }));
+  }
+  const fitem = (p, inner, attrs, cls = '') =>
+    `<button class="fitem ${cls}" style="left:${p.x.toFixed(1)}%;top:${p.y.toFixed(1)}%;--r:${p.rot.toFixed(1)}deg" ${attrs}>${inner}</button>`;
+  const objArt = (o) => `<div class="visual sm">${Sketch.motif(o.cid, o.it.id)}</div>`;
+  const badge = (z, n) => `<span class="badge"><b class="ar">${z.items[n - 1].digit}</b><i>${n}</i></span>`;
+  const tick = `<span class="tick">${STAR}</span>`;
+
+  function finishGame(mistakes) {
+    const earned = mistakes === 0 ? 3 : mistakes <= 2 ? 2 : 1;
+    go({ name: 'result', cat: view.cat, earned, tab: 'play', next: 'games' });
+  }
+
+  function renderGames() {
+    const c = catById(view.cat);
+    const cards = GAMES.map((g) => `<button class="game-card" data-act="g-start" data-g="${g.id}">
+        <div class="gic">${Sketch.get('game/' + g.id)}</div><span>${g.de}</span></button>`).join('');
+    return `${topbar(c, '<span></span>')}<div class="games-grid">${cards}</div>`;
+  }
+
+  function renderGame() {
+    return { suche: renderSuche, zaehlen: renderZaehlen, geben: renderGeben, malen: renderMalen }[view.game]();
+  }
+
+  /* -- Such mich! -- */
+  function startSuche() {
+    const c = catById(view.cat);
+    const pool = shuffle(c.items).slice(0, 9);
+    const pos = scatter(pool.length);
+    const targets = shuffle(pool).slice(0, 5);
+    go({ name: 'game', game: 'suche', cat: c.id, field: pool.map((it, i) => ({ it, ...pos[i], found: false })), targets, i: 0, mistakes: 0, busy: false });
+    speak(c, targets[0]);
+  }
+  function renderSuche() {
+    const c = catById(view.cat);
+    const items = view.field.map((f) => fitem(f, visual(c, f.it, true) + (f.found ? tick : ''),
+      `data-act="s-pick" data-id="${f.it.id}" aria-label="${f.it.de}"`, f.found ? 'found' : '')).join('');
+    return `${topbar(c, dotsHtml(view.targets.length, view.i), 'Such mich!')}
+      <div class="prompt"><button class="speaker sm" data-act="s-ask" aria-label="Nochmal anhören">${ICON.speaker}</button></div>
+      <div class="field-card"><div class="field" style="--s:17vmin">${items}</div></div>`;
+  }
+  function sPick(el) {
+    if (view.busy) return;
+    const c = catById(view.cat);
+    const target = view.targets[view.i];
+    if (el.dataset.id !== target.id) { view.mistakes += 1; shake(el); return; }
+    view.busy = true;
+    view.field.find((f) => f.it.id === target.id).found = true;
+    el.classList.add('found');
+    el.insertAdjacentHTML('beforeend', tick);
+    speak(c, target);
+    later(() => {
+      if (view.i + 1 < view.targets.length) { view.i += 1; view.busy = false; render(); speak(c, view.targets[view.i]); }
+      else finishGame(view.mistakes);
+    }, 1500);
+  }
+
+  /* -- Zähl mit! -- */
+  function startZaehlen() {
+    const ns = numbers(10, 5);
+    const objs = pickObjects(5);
+    go({ name: 'game', game: 'zaehlen', cat: 'zahlen', i: 0, busy: false,
+      rounds: ns.map((n, i) => ({ n, obj: objs[i], pos: scatter(n), counted: [] })) });
+  }
+  function renderZaehlen() {
+    const c = catById('zahlen');
+    const r = view.rounds[view.i];
+    const items = r.pos.map((p, k) => {
+      const num = r.counted.indexOf(k) + 1;
+      return fitem(p, objArt(r.obj) + (num ? badge(c, num) : ''), `data-act="z-tap" data-k="${k}"`, num ? 'counted' : '');
+    }).join('');
+    return `${topbar(c, dotsHtml(view.rounds.length, view.i), 'Zähl mit!')}
+      <div class="prompt"><span class="hint-chip" id="hint">Tippe alles an und zähle mit</span><div class="total" id="total"></div></div>
+      <div class="field-card"><div class="field" style="--s:15vmin">${items}</div></div>`;
+  }
+  function zTap(el) {
+    const c = catById('zahlen');
+    const r = view.rounds[view.i];
+    const k = Number(el.dataset.k);
+    const had = r.counted.indexOf(k);
+    if (had >= 0) { speak(c, c.items[had]); return; }
+    if (view.busy) return;
+    r.counted.push(k);
+    const num = r.counted.length;
+    el.classList.add('counted');
+    el.insertAdjacentHTML('beforeend', badge(c, num));
+    speak(c, c.items[num - 1]);
+    if (num < r.n) return;
+    view.busy = true;
+    const it = c.items[r.n - 1];
+    document.getElementById('hint').style.display = 'none';
+    document.getElementById('total').innerHTML = `<b class="ar">${it.digit}</b><b>${r.n}</b><span class="ar">${it.ar}</span>${STAR}`;
+    later(() => {
+      if (view.i + 1 < view.rounds.length) { view.i += 1; view.busy = false; render(); }
+      else finishGame(0);
+    }, 2600);
+  }
+
+  /* -- Gib mir … -- */
+  function startGeben() {
+    const c = catById('zahlen');
+    const ns = numbers(8, 5);
+    const objs = pickObjects(5);
+    go({ name: 'game', game: 'geben', cat: 'zahlen', i: 0, mistakes: 0, busy: false,
+      rounds: ns.map((n, i) => ({ n, obj: objs[i], pos: scatter(Math.min(12, n + 4)), picked: [] })) });
+    speak(c, c.items[ns[0] - 1]);
+  }
+  function renderGeben() {
+    const c = catById('zahlen');
+    const r = view.rounds[view.i];
+    const it = c.items[r.n - 1];
+    const items = r.pos.map((p, k) => fitem(p, objArt(r.obj) + (r.picked.includes(k) ? tick : ''),
+      `data-act="g-pick" data-k="${k}"`, r.picked.includes(k) ? 'picked' : '')).join('');
+    return `${topbar(c, dotsHtml(view.rounds.length, view.i), 'Gib mir …')}
+      <div class="prompt">
+        <button class="speaker sm" data-act="g-ask" aria-label="Nochmal anhören">${ICON.speaker}</button>
+        <span class="numchip"><b class="ar">${it.digit}</b><b>${r.n}</b></span>
+      </div>
+      <div class="field-card"><div class="field" style="--s:15vmin">${items}</div></div>
+      <div class="cta-row"><button class="pill" data-act="g-done">${ICON.check} Fertig</button></div>`;
+  }
+  function gPick(el) {
+    if (view.busy) return;
+    const r = view.rounds[view.i];
+    const k = Number(el.dataset.k);
+    const at = r.picked.indexOf(k);
+    if (at >= 0) { r.picked.splice(at, 1); el.classList.remove('picked'); el.querySelector('.tick')?.remove(); }
+    else { r.picked.push(k); el.classList.add('picked'); el.insertAdjacentHTML('beforeend', tick); }
+  }
+  function gDone() {
+    if (view.busy) return;
+    const c = catById('zahlen');
+    const r = view.rounds[view.i];
+    if (r.picked.length !== r.n) {
+      view.mistakes += 1;
+      app.querySelectorAll('.fitem.picked').forEach((el) => { shake(el); });
+      later(() => {
+        r.picked = [];
+        app.querySelectorAll('.fitem.picked').forEach((el) => { el.classList.remove('picked'); el.querySelector('.tick')?.remove(); });
+        speak(c, c.items[r.n - 1]);
+      }, 700);
+      return;
+    }
+    view.busy = true;
+    speak(c, c.items[r.n - 1]);
+    later(() => {
+      if (view.i + 1 < view.rounds.length) { view.i += 1; view.busy = false; render(); speak(c, c.items[view.rounds[view.i].n - 1]); }
+      else finishGame(view.mistakes);
+    }, 1900);
+  }
+
+  /* -- Ausmalen -- */
+  function startMalen() {
+    go({ name: 'game', game: 'malen', cat: 'farben', color: catById('farben').items[0].id, fills: {} });
+  }
+  function renderMalen() {
+    const c = catById('farben');
+    const chips = c.items.map((it) => `<button class="chip ${it.id === view.color ? 'sel' : ''}" data-act="m-color" data-id="${it.id}" style="--c:${it.color}" aria-label="${it.de}"></button>`).join('');
+    return `${topbar(c, '<span></span>', 'Ausmalen')}
+      <div class="scene-card">${Sketch.scene(view.fills)}</div>
+      <div class="palette">${chips}<button class="chip reset" data-act="m-reset" aria-label="Neu beginnen">${ICON.undo}</button></div>`;
+  }
+  function mColor(el) {
+    const c = catById('farben');
+    view.color = el.dataset.id;
+    app.querySelectorAll('.chip').forEach((x) => x.classList.toggle('sel', x === el));
+    speak(c, c.items.find((x) => x.id === view.color));
+  }
+  function mFill(el) {
+    const c = catById('farben');
+    const col = c.items.find((x) => x.id === view.color).color;
+    view.fills[el.dataset.r] = col;
+    el.setAttribute('fill', col);
   }
 
   /* ---------- Elternbereich ---------- */
@@ -324,7 +533,25 @@
     if (!el || el.disabled) return;
     const c = view.cat && catById(view.cat);
     switch (el.dataset.act) {
-      case 'open': { const nc = catById(el.dataset.cat); go({ name: 'learn', cat: nc.id, idx: 0 }); speak(nc, nc.items[0]); break; }
+      case 'open': {
+        const nc = catById(el.dataset.cat);
+        const tab = currentTab();
+        if (view.name === 'parent' || tab === 'learn') { go({ name: 'learn', cat: nc.id, idx: 0 }); speak(nc, nc.items[0]); }
+        else if (tab === 'quiz') startQuiz(nc);
+        else go({ name: 'games', cat: nc.id });
+        break;
+      }
+      case 'games': go({ name: 'games', cat: view.cat }); break;
+      case 'g-start': ({ suche: startSuche, zaehlen: startZaehlen, geben: startGeben, malen: startMalen })[el.dataset.g](); break;
+      case 's-pick': sPick(el); break;
+      case 's-ask': speak(c, view.targets[view.i]); break;
+      case 'z-tap': zTap(el); break;
+      case 'g-pick': gPick(el); break;
+      case 'g-done': gDone(); break;
+      case 'g-ask': { const z = catById('zahlen'); speak(z, z.items[view.rounds[view.i].n - 1]); break; }
+      case 'm-color': mColor(el); break;
+      case 'm-fill': mFill(el); break;
+      case 'm-reset': view.fills = {}; render(); break;
       case 'learn': go({ name: 'learn', cat: view.cat, idx: 0 }); speak(c, c.items[0]); break;
       case 'prev': view.idx -= 1; render(); speak(c, c.items[view.idx]); break;
       case 'next': view.idx += 1; render(); speak(c, c.items[view.idx]); break;

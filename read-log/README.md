@@ -18,6 +18,11 @@ Supabase-Store für den Sync (Schema: `supabase/schema.sql`), Anmeldung.
 Hinweis: Gespeichert wird bisher in `data/library.json` (nur lokal). Ein Sync zwischen Mac, iPhone und iPad
 braucht den Supabase-Store hinter der Schnittstelle `Store` in `lib/types.ts`.
 
+## Anmeldung (online)
+Die Seite ist per PIN geschützt. Der Server meldet dahinter ein festes Supabase-Konto an (Zeilen-Sicherheit bleibt aktiv).
+Umgebungsvariablen bei Netlify: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`,
+`APP_USER_EMAIL`, `APP_USER_PASSWORD` (geheim), `APP_PIN` (geheim, 4–12 Ziffern). Erlaubt sind 5 Versuche pro 15 Minuten.
+
 ## Entwickeln
 ```
 npm install

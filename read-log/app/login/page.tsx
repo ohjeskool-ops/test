@@ -40,7 +40,7 @@ export default function LoginPage() {
           onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
           style={{ fontSize: 20, letterSpacing: "0.4em", textAlign: "center" }}
         />
-        <button className="btn" disabled={busy || pin.length < 4}>{busy ? "…" : "Öffnen"}</button>
+        <button className="btn-small" style={{ padding: "7px 16px" }} disabled={busy || pin.length < 4}>{busy ? "…" : "Öffnen"}</button>
         {msg && <div className="msg">{msg}</div>}
       </form>
     </div>

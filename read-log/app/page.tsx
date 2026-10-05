@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { ContentType, Item, ItemListEntry, ReadStatus } from "@/lib/types";
+import { AiPanel } from "./ai-panel";
+import type { ContentType, Item, ItemListEntry, ReadStatus, Summary } from "@/lib/types";
 
 type View = "library" | "reader" | "chat";
 const TYPE_LABEL: Record<ContentType, string> = { article: "Artikel", pdf: "PDF", youtube: "YouTube", podcast: "Podcast" };
@@ -25,6 +26,7 @@ export default function Page() {
   const [msg, setMsg] = useState<{ text: string; info?: boolean; blocked?: boolean } | null>(null);
   const [current, setCurrent] = useState<Item | null>(null);
   const [tagDraft, setTagDraft] = useState("");
+  const [hl, setHl] = useState<{ start: number; end: number } | null>(null);
   const readerRef = useRef<HTMLDivElement>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -106,6 +108,13 @@ export default function Page() {
       setCurrent((c) => (c ? { ...c, ...r.data, blocks: c.blocks } : c));
       reload();
     }
+  }
+
+  function jump(start: number, end: number) {
+    setView("reader");
+    setHl({ start, end });
+    requestAnimationFrame(() => requestAnimationFrame(() => document.getElementById(`b${start}`)?.scrollIntoView({ block: "center", behavior: "smooth" })));
+    setTimeout(() => setHl(null), 6000);
   }
 
   async function signOut() {
@@ -219,7 +228,7 @@ export default function Page() {
                   <div className="note-box warn">Kein Text extrahiert. Bei dynamisch geladenen oder angemeldeten Seiten hilft später die Safari-Erweiterung.</div>
                 )}
                 {current.blocks.map((b, idx) => (
-                  <p key={idx} id={`b${idx}`} className="block"><span className="block-no">{idx + 1}</span>{b}</p>
+                  <p key={idx} id={`b${idx}`} className={`block${hl && idx >= hl.start && idx <= hl.end ? " hl" : ""}`}><span className="block-no">{idx + 1}</span>{b}</p>
                 ))}
               </article>
             )}
@@ -228,12 +237,9 @@ export default function Page() {
 
         {/* ── KI-Chat ── */}
         <aside className="pane pane-chat">
-          <div className="section-label">KI-Chat</div>
+          <div className="section-label">KI</div>
           <div className="pane-scroll">
-            <div className="coming">
-              Zusammenfassung und Chat über das geöffnete Dokument folgen im nächsten Schritt.
-              Der extrahierte Text ist bereits gespeichert; Absätze sind nummeriert, damit Antworten später auf Textstellen verweisen können.
-            </div>
+            <AiPanel item={current} onJump={jump} onSummary={(summary: Summary) => setCurrent((c) => (c ? { ...c, summary } : c))} />
           </div>
         </aside>
       </main>

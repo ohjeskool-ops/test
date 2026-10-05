@@ -46,3 +46,19 @@ create function public.pin_check() returns boolean language sql volatile securit
   select (select c from recent) < 5';
 revoke all on function public.pin_check() from public;
 grant execute on function public.pin_check() to anon, authenticated;
+
+-- Chatverlauf pro Dokument
+create table public.chat_messages (
+  id uuid primary key default gen_random_uuid(),
+  item_id uuid not null references public.items on delete cascade,
+  user_id uuid not null default auth.uid() references auth.users on delete cascade,
+  role text not null check (role in ('user','assistant')),
+  text text not null,
+  segments jsonb,
+  created_at timestamptz not null default now()
+);
+create index chat_messages_item on public.chat_messages (item_id, created_at);
+alter table public.chat_messages enable row level security;
+create policy "eigene Chats lesen" on public.chat_messages for select to authenticated using ((select auth.uid()) = user_id);
+create policy "eigene Chats anlegen" on public.chat_messages for insert to authenticated with check ((select auth.uid()) = user_id);
+create policy "eigene Chats löschen" on public.chat_messages for delete to authenticated using ((select auth.uid()) = user_id);

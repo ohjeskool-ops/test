@@ -11,8 +11,15 @@ Design nach job-log (Monospace, Papierton, Haarlinien).
 - Leseposition pro Dokument gespeichert, Export als Markdown/JSON
 - Import mit übergebenem HTML (`POST /api/items {url, html}`) als Basis für die Safari-Erweiterung
 
+## Stand (Schritt 3: KI)
+- Zusammenfassung auf Deutsch (Überblick + wichtigste Aussagen), gespeichert; neu erzeugt nur auf Knopfdruck, bei geändertem Inhalt wird ein Hinweis gezeigt
+- Chat pro Dokument mit Verlauf in der Datenbank; Antworten tragen Verweise `[n]` auf nummerierte Absätze, ein Klick springt zur Stelle und hebt sie hervor
+- Fehlt die Information, antwortet die KI mit „Die Quelle liefert dazu keine Antwort.“
+- Technik: Anthropic-Zitate (`content_block_location`) über ein Dokument aus Absatz-Blöcken; Modell per `ANTHROPIC_MODEL` änderbar (Standard `claude-opus-5-5`)
+- `READLOG_FAKE_AI=1` schaltet einen Testmodus ohne echte KI ein (nur lokal)
+
 ## Noch offen
-Zusammenfassung und Chat (Anthropic), PDF, YouTube, Podcasts (Deepgram austauschbar), OCR, Safari-Erweiterung,
+PDF, YouTube, Podcasts (Deepgram austauschbar), OCR, Safari-Erweiterung,
 Supabase-Store für den Sync (Schema: `supabase/schema.sql`), Anmeldung.
 
 Hinweis: Gespeichert wird bisher in `data/library.json` (nur lokal). Ein Sync zwischen Mac, iPhone und iPad

@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Item, ItemListEntry, ListQuery, Store } from "./types";
+import type { ChatMessage, Item, ItemListEntry, ListQuery, Store } from "./types";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const LIST_COLS = "id,type,title,source,url,normalized_url,content_hash,created_at,tags,status,text_status,read_position,summary,excerpt";
@@ -20,6 +20,10 @@ const toItem = (r: any): Item => {
 function fail(error: { message: string; code?: string } | null): void {
   if (error) throw Object.assign(new Error(error.message), { code: error.code });
 }
+
+const toMessage = (r: any): ChatMessage => ({
+  id: r.id, itemId: r.item_id, role: r.role, text: r.text, segments: r.segments ?? null, createdAt: r.created_at,
+});
 
 export const isDuplicateError = (e: unknown) => (e as { code?: string })?.code === "23505";
 
@@ -82,6 +86,22 @@ export function createSupabaseStore(db: SupabaseClient): Store {
       const { data, error } = await db.from("items").delete().eq("id", id).select("id");
       fail(error);
       return (data?.length ?? 0) > 0;
+    },
+    async listMessages(itemId) {
+      const { data, error } = await db.from("chat_messages").select("*").eq("item_id", itemId).order("created_at", { ascending: true });
+      fail(error);
+      return (data ?? []).map(toMessage);
+    },
+    async addMessages(messages) {
+      if (messages.length === 0) return;
+      const { error } = await db.from("chat_messages").insert(
+        messages.map((m) => ({ id: m.id, item_id: m.itemId, role: m.role, text: m.text, segments: m.segments, created_at: m.createdAt })),
+      );
+      fail(error);
+    },
+    async clearMessages(itemId) {
+      const { error } = await db.from("chat_messages").delete().eq("item_id", itemId);
+      fail(error);
     },
   };
 }

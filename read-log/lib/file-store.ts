@@ -1,12 +1,30 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import type { Item, ItemListEntry, ListQuery, Store } from "./types";
+import type { ChatMessage, Item, ItemListEntry, ListQuery, Store } from "./types";
 
 /**
  * Dev-Speicher: eine JSON-Datei. Austauschbar gegen eine Supabase-Implementierung
  * (Schema siehe supabase/schema.sql), die dieselbe Store-Schnittstelle erfüllt.
  */
 const FILE = process.env.READLOG_DATA_FILE ?? path.join(process.cwd(), "data", "library.json");
+
+const CHAT_FILE = FILE.replace(/\.json$/, "") + ".chat.json";
+
+async function loadChat(): Promise<ChatMessage[]> {
+  try {
+    return JSON.parse(await fs.readFile(CHAT_FILE, "utf8")) as ChatMessage[];
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code === "ENOENT") return [];
+    throw e;
+  }
+}
+
+async function saveChat(messages: ChatMessage[]): Promise<void> {
+  await fs.mkdir(path.dirname(CHAT_FILE), { recursive: true });
+  const tmp = `${CHAT_FILE}.tmp`;
+  await fs.writeFile(tmp, JSON.stringify(messages, null, 2));
+  await fs.rename(tmp, CHAT_FILE);
+}
 
 let queue: Promise<unknown> = Promise.resolve();
 function serial<T>(fn: () => Promise<T>): Promise<T> {
@@ -77,6 +95,17 @@ export const fileStore: Store = {
       const next = items.filter((i) => i.id !== id);
       if (next.length === items.length) return false;
       await save(next);
+      await saveChat((await loadChat()).filter((m) => m.itemId !== id));
       return true;
+    }),
+  listMessages: async (itemId) =>
+    (await loadChat()).filter((m) => m.itemId === itemId).sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
+  addMessages: (messages) =>
+    serial(async () => {
+      await saveChat([...(await loadChat()), ...messages]);
+    }),
+  clearMessages: (itemId) =>
+    serial(async () => {
+      await saveChat((await loadChat()).filter((m) => m.itemId !== itemId));
     }),
 };

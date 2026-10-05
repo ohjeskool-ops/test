@@ -112,8 +112,8 @@ export function Reader(props: {
     <>
       <div className="reader-bar">
         <span className="section-label">Lesen</span>
-        <button title="Schrift kleiner" onClick={() => props.onPrefs({ ...prefs, size: Math.max(15, prefs.size - 1) })}>A−</button>
-        <button title="Schrift größer" onClick={() => props.onPrefs({ ...prefs, size: Math.min(27, prefs.size + 1) })}>A+</button>
+        <button title="Schrift kleiner" onClick={() => props.onPrefs({ ...prefs, size: Math.max(12, prefs.size - 1) })}>A−</button>
+        <button title="Schrift größer" onClick={() => props.onPrefs({ ...prefs, size: Math.min(22, prefs.size + 1) })}>A+</button>
         <button title="Schriftart wechseln" onClick={() => props.onPrefs({ ...prefs, serif: !prefs.serif })}>{prefs.serif ? "Serif" : "Mono"}</button>
         <button className="desktop-only" title="Bibliothek und Seitenleiste ausblenden" onClick={props.onFocus}>{props.focus ? "Fokus aus" : "Fokus"}</button>
       </div>

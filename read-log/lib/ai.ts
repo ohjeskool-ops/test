@@ -12,7 +12,7 @@ export class AiError extends Error {
 export const NO_ANSWER = "Die Quelle liefert dazu keine Antwort.";
 const MAX_CHARS = 1_500_000;
 
-const model = () => process.env.ANTHROPIC_MODEL || "claude-opus-5-5";
+const model = () => process.env.ANTHROPIC_MODEL || "claude-sonnet-5-5";
 const fake = () => process.env.READLOG_FAKE_AI === "1";
 
 function client(): Anthropic {

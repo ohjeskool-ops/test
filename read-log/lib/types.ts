@@ -1,4 +1,4 @@
-export type ContentType = "article" | "pdf" | "youtube" | "podcast";
+export type ContentType = "article" | "pdf" | "youtube" | "podcast" | "bookmark";
 export type ReadStatus = "unread" | "read";
 export type TextStatus = "ok" | "missing" | "needs_ocr";
 
@@ -49,6 +49,18 @@ export interface ChatMessage {
   createdAt: string;
 }
 
+/** Markierung innerhalb eines Absatzes (Zeichenpositionen im Absatztext, Ende exklusiv). */
+export interface Highlight {
+  id: string;
+  itemId: string;
+  block: number;
+  start: number;
+  end: number;
+  text: string;
+  note: string;
+  createdAt: string;
+}
+
 export type ItemListEntry = Omit<Item, "blocks"> & { excerpt: string };
 
 export interface ListQuery {
@@ -69,4 +81,8 @@ export interface Store {
   listMessages(itemId: string): Promise<ChatMessage[]>;
   addMessages(messages: ChatMessage[]): Promise<void>;
   clearMessages(itemId: string): Promise<void>;
+  listHighlights(itemId: string): Promise<Highlight[]>;
+  addHighlights(highlights: Highlight[]): Promise<void>;
+  updateHighlightNote(id: string, note: string): Promise<boolean>;
+  removeHighlight(id: string): Promise<boolean>;
 }

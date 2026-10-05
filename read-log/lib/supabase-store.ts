@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { ChatMessage, Item, ItemListEntry, ListQuery, Store } from "./types";
+import type { ChatMessage, Highlight, Item, ItemListEntry, ListQuery, Store } from "./types";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const LIST_COLS = "id,type,title,source,url,normalized_url,content_hash,created_at,tags,status,text_status,read_position,summary,excerpt";
@@ -23,6 +23,10 @@ function fail(error: { message: string; code?: string } | null): void {
 
 const toMessage = (r: any): ChatMessage => ({
   id: r.id, itemId: r.item_id, role: r.role, text: r.text, segments: r.segments ?? null, createdAt: r.created_at,
+});
+
+const toHighlight = (r: any): Highlight => ({
+  id: r.id, itemId: r.item_id, block: r.block, start: r.start_offset, end: r.end_offset, text: r.text, note: r.note, createdAt: r.created_at,
 });
 
 export const isDuplicateError = (e: unknown) => (e as { code?: string })?.code === "23505";
@@ -102,6 +106,28 @@ export function createSupabaseStore(db: SupabaseClient): Store {
     async clearMessages(itemId) {
       const { error } = await db.from("chat_messages").delete().eq("item_id", itemId);
       fail(error);
+    },
+    async listHighlights(itemId) {
+      const { data, error } = await db.from("highlights").select("*").eq("item_id", itemId).order("block").order("start_offset");
+      fail(error);
+      return (data ?? []).map(toHighlight);
+    },
+    async addHighlights(list) {
+      if (list.length === 0) return;
+      const { error } = await db.from("highlights").insert(
+        list.map((h) => ({ id: h.id, item_id: h.itemId, block: h.block, start_offset: h.start, end_offset: h.end, text: h.text, note: h.note, created_at: h.createdAt })),
+      );
+      fail(error);
+    },
+    async updateHighlightNote(id, note) {
+      const { data, error } = await db.from("highlights").update({ note }).eq("id", id).select("id");
+      fail(error);
+      return (data?.length ?? 0) > 0;
+    },
+    async removeHighlight(id) {
+      const { data, error } = await db.from("highlights").delete().eq("id", id).select("id");
+      fail(error);
+      return (data?.length ?? 0) > 0;
     },
   };
 }

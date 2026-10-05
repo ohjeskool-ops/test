@@ -1,6 +1,6 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import type { ChatMessage, Item, ItemListEntry, ListQuery, Store } from "./types";
+import type { ChatMessage, Highlight, Item, ItemListEntry, ListQuery, Store } from "./types";
 
 /**
  * Dev-Speicher: eine JSON-Datei. Austauschbar gegen eine Supabase-Implementierung
@@ -24,6 +24,24 @@ async function saveChat(messages: ChatMessage[]): Promise<void> {
   const tmp = `${CHAT_FILE}.tmp`;
   await fs.writeFile(tmp, JSON.stringify(messages, null, 2));
   await fs.rename(tmp, CHAT_FILE);
+}
+
+const HL_FILE = FILE.replace(/\.json$/, "") + ".highlights.json";
+
+async function loadHl(): Promise<Highlight[]> {
+  try {
+    return JSON.parse(await fs.readFile(HL_FILE, "utf8")) as Highlight[];
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code === "ENOENT") return [];
+    throw e;
+  }
+}
+
+async function saveHl(list: Highlight[]): Promise<void> {
+  await fs.mkdir(path.dirname(HL_FILE), { recursive: true });
+  const tmp = `${HL_FILE}.tmp`;
+  await fs.writeFile(tmp, JSON.stringify(list, null, 2));
+  await fs.rename(tmp, HL_FILE);
 }
 
 let queue: Promise<unknown> = Promise.resolve();
@@ -96,6 +114,7 @@ export const fileStore: Store = {
       if (next.length === items.length) return false;
       await save(next);
       await saveChat((await loadChat()).filter((m) => m.itemId !== id));
+      await saveHl((await loadHl()).filter((h) => h.itemId !== id));
       return true;
     }),
   listMessages: async (itemId) =>
@@ -107,5 +126,30 @@ export const fileStore: Store = {
   clearMessages: (itemId) =>
     serial(async () => {
       await saveChat((await loadChat()).filter((m) => m.itemId !== itemId));
+    }),
+  listHighlights: async (itemId) =>
+    (await loadHl())
+      .filter((h) => h.itemId === itemId)
+      .sort((a, b) => a.block - b.block || a.start - b.start),
+  addHighlights: (list) =>
+    serial(async () => {
+      await saveHl([...(await loadHl()), ...list]);
+    }),
+  updateHighlightNote: (id, note) =>
+    serial(async () => {
+      const all = await loadHl();
+      const h = all.find((x) => x.id === id);
+      if (!h) return false;
+      h.note = note;
+      await saveHl(all);
+      return true;
+    }),
+  removeHighlight: (id) =>
+    serial(async () => {
+      const all = await loadHl();
+      const next = all.filter((x) => x.id !== id);
+      if (next.length === all.length) return false;
+      await saveHl(next);
+      return true;
     }),
 };

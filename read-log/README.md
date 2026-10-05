@@ -15,8 +15,13 @@ Design nach job-log (Monospace, Papierton, Haarlinien).
 - Zusammenfassung auf Deutsch (Überblick + wichtigste Aussagen), gespeichert; neu erzeugt nur auf Knopfdruck, bei geändertem Inhalt wird ein Hinweis gezeigt
 - Chat pro Dokument mit Verlauf in der Datenbank; Antworten tragen Verweise `[n]` auf nummerierte Absätze, ein Klick springt zur Stelle und hebt sie hervor
 - Fehlt die Information, antwortet die KI mit „Die Quelle liefert dazu keine Antwort.“
-- Technik: Anthropic-Zitate (`content_block_location`) über ein Dokument aus Absatz-Blöcken; Modell per `ANTHROPIC_MODEL` änderbar (Standard `claude-opus-5-5`)
+- Technik: Anthropic-Zitate (`content_block_location`) über ein Dokument aus Absatz-Blöcken; Modell per `ANTHROPIC_MODEL` änderbar (Standard `claude-sonnet-5-5`)
 - `READLOG_FAKE_AI=1` schaltet einen Testmodus ohne echte KI ein (nur lokal)
+
+## Stand (Schritt 4: Leseansicht, Markierungen, Lesezeichen)
+- Saubere Leseansicht: Serif-Schrift, schmale Spalte, A−/A+ und Serif/Mono, Fokusmodus ohne Seitenleisten (Einstellungen pro Gerät)
+- Markierungen: Text auswählen und „Markieren“; auch über mehrere Absätze. Mit Notiz, in der Datenbank gespeichert, im Markdown- und JSON-Export enthalten
+- Lesezeichen: Beim Hinzufügen zwischen „Lesen“ und „Lesezeichen“ wählen. Speichert Link, Titel und Beschreibung (Open Graph), mit Tags und eigenem Filter; wenn die Seite nicht abrufbar ist, wird trotzdem gespeichert
 
 ## Noch offen
 PDF, YouTube, Podcasts (Deepgram austauschbar), OCR, Safari-Erweiterung,

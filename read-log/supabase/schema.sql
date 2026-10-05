@@ -4,7 +4,7 @@ create extension if not exists pg_trgm with schema extensions;
 create table public.items (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null default auth.uid() references auth.users on delete cascade,
-  type text not null check (type in ('article','pdf','youtube','podcast')),
+  type text not null check (type in ('article','pdf','youtube','podcast','bookmark')),
   title text not null,
   source text not null,
   url text,
@@ -62,3 +62,22 @@ alter table public.chat_messages enable row level security;
 create policy "eigene Chats lesen" on public.chat_messages for select to authenticated using ((select auth.uid()) = user_id);
 create policy "eigene Chats anlegen" on public.chat_messages for insert to authenticated with check ((select auth.uid()) = user_id);
 create policy "eigene Chats löschen" on public.chat_messages for delete to authenticated using ((select auth.uid()) = user_id);
+
+-- Markierungen (Positionen im Absatztext, Ende exklusiv)
+create table public.highlights (
+  id uuid primary key default gen_random_uuid(),
+  item_id uuid not null references public.items on delete cascade,
+  user_id uuid not null default auth.uid() references auth.users on delete cascade,
+  block integer not null check (block >= 0),
+  start_offset integer not null check (start_offset >= 0),
+  end_offset integer not null check (end_offset > start_offset),
+  text text not null,
+  note text not null default '',
+  created_at timestamptz not null default now()
+);
+create index highlights_item on public.highlights (item_id, block, start_offset);
+alter table public.highlights enable row level security;
+create policy "eigene Markierungen lesen" on public.highlights for select to authenticated using ((select auth.uid()) = user_id);
+create policy "eigene Markierungen anlegen" on public.highlights for insert to authenticated with check ((select auth.uid()) = user_id);
+create policy "eigene Markierungen ändern" on public.highlights for update to authenticated using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+create policy "eigene Markierungen löschen" on public.highlights for delete to authenticated using ((select auth.uid()) = user_id);

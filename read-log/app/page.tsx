@@ -2,10 +2,14 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AiPanel } from "./ai-panel";
-import type { ContentType, Item, ItemListEntry, ReadStatus, Summary } from "@/lib/types";
+import { MarksPanel } from "./marks-panel";
+import { Reader, type Prefs } from "./reader";
+import type { ContentType, Highlight, Item, ItemListEntry, ReadStatus, Summary } from "@/lib/types";
 
 type View = "library" | "reader" | "chat";
-const TYPE_LABEL: Record<ContentType, string> = { article: "Artikel", pdf: "PDF", youtube: "YouTube", podcast: "Podcast" };
+type Side = "ai" | "marks";
+const TYPE_LABEL: Record<ContentType, string> = { article: "Artikel", pdf: "PDF", youtube: "YouTube", podcast: "Podcast", bookmark: "Lesezeichen" };
+const DEFAULT_PREFS: Prefs = { size: 18, serif: true };
 
 async function api<T>(url: string, init?: RequestInit): Promise<{ ok: boolean; status: number; data: T & { error?: string; existingId?: string } }> {
   const res = await fetch(url, { ...init, headers: { "content-type": "application/json" } });
@@ -15,22 +19,42 @@ async function api<T>(url: string, init?: RequestInit): Promise<{ ok: boolean; s
 
 export default function Page() {
   const [view, setView] = useState<View>("library");
+  const [side, setSide] = useState<Side>("ai");
   const [chatOpen, setChatOpen] = useState(true);
+  const [focus, setFocus] = useState(false);
+  const [prefs, setPrefs] = useState<Prefs>(DEFAULT_PREFS);
   const [items, setItems] = useState<ItemListEntry[]>([]);
   const [q, setQ] = useState("");
   const [type, setType] = useState<ContentType | "">("");
   const [status, setStatus] = useState<ReadStatus | "">("");
   const [tag, setTag] = useState("");
   const [url, setUrl] = useState("");
+  const [newTags, setNewTags] = useState("");
+  const [mode, setMode] = useState<"read" | "bookmark">("read");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ text: string; info?: boolean; blocked?: boolean } | null>(null);
   const [current, setCurrent] = useState<Item | null>(null);
+  const [highlights, setHighlights] = useState<Highlight[]>([]);
+  const [activeMark, setActiveMark] = useState<string | null>(null);
   const [tagDraft, setTagDraft] = useState("");
-  const [hl, setHl] = useState<{ start: number; end: number } | null>(null);
-  const readerRef = useRef<HTMLDivElement>(null);
+  const [flash, setFlash] = useState<{ start: number; end: number } | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const allTags = [...new Set(items.flatMap((i) => i.tags))].sort();
+
+  // Leseeinstellungen pro Gerät merken (nur Komfort, die App läuft auch ohne).
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("readlog-prefs");
+      if (raw) setPrefs({ ...DEFAULT_PREFS, ...JSON.parse(raw) });
+    } catch {}
+  }, []);
+  function changePrefs(p: Prefs) {
+    setPrefs(p);
+    try {
+      localStorage.setItem("readlog-prefs", JSON.stringify(p));
+    } catch {}
+  }
 
   const reload = useCallback(async () => {
     const p = new URLSearchParams();
@@ -57,28 +81,17 @@ export default function Page() {
   }, [reload]);
 
   async function open(id: string) {
-    const r = await api<Item>(`/api/items/${id}`);
+    const [r, h] = await Promise.all([api<Item>(`/api/items/${id}`), api<{ highlights: Highlight[] }>(`/api/items/${id}/highlights`)]);
     if (!r.ok) return;
     setCurrent(r.data);
+    setHighlights(h.ok ? h.data.highlights : []);
+    setActiveMark(null);
     setTagDraft(r.data.tags.join(", "));
     setView("reader");
   }
 
-  // Leseposition wiederherstellen, sobald ein Dokument geöffnet wird.
-  useEffect(() => {
-    const el = readerRef.current;
-    if (!el || !current) return;
-    requestAnimationFrame(() => {
-      el.scrollTop = (el.scrollHeight - el.clientHeight) * current.readPosition;
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [current?.id, view]);
-
-  function onScroll() {
-    const el = readerRef.current;
-    if (!el || !current) return;
-    const max = el.scrollHeight - el.clientHeight;
-    const pos = max > 0 ? el.scrollTop / max : 0;
+  function savePosition(pos: number) {
+    if (!current) return;
     if (saveTimer.current) clearTimeout(saveTimer.current);
     const id = current.id;
     saveTimer.current = setTimeout(() => api(`/api/items/${id}`, { method: "PATCH", body: JSON.stringify({ readPosition: pos }) }), 600);
@@ -88,15 +101,19 @@ export default function Page() {
     if (!url.trim()) return;
     setBusy(true);
     setMsg(null);
-    const r = await api<{ id: string; textStatus: string }>("/api/items", { method: "POST", body: JSON.stringify({ url: url.trim() }) });
+    const r = await api<{ id: string; textStatus: string }>("/api/items", {
+      method: "POST",
+      body: JSON.stringify({ url: url.trim(), kind: mode === "bookmark" ? "bookmark" : "article", tags: newTags }),
+    });
     setBusy(false);
     if (r.ok) {
       setUrl("");
-      setMsg({ text: r.data.textStatus === "ok" ? "Gespeichert." : "Gespeichert, aber ohne lesbaren Text (Seite lädt Inhalte per JavaScript oder ist geschützt).", info: true });
+      setNewTags("");
+      setMsg({ text: mode === "bookmark" ? "Lesezeichen gespeichert." : r.data.textStatus === "ok" ? "Gespeichert." : "Gespeichert, aber ohne lesbaren Text (Seite lädt Inhalte per JavaScript oder ist geschützt).", info: true });
       await reload();
       open(r.data.id);
     } else {
-      setMsg({ text: r.data.error ?? "Import fehlgeschlagen.", blocked: r.status === 502 });
+      setMsg({ text: r.data.error ?? "Import fehlgeschlagen.", blocked: r.status === 502 && mode === "read" });
       if (r.data.existingId) open(r.data.existingId);
     }
   }
@@ -112,9 +129,30 @@ export default function Page() {
 
   function jump(start: number, end: number) {
     setView("reader");
-    setHl({ start, end });
+    setFlash({ start, end });
     requestAnimationFrame(() => requestAnimationFrame(() => document.getElementById(`b${start}`)?.scrollIntoView({ block: "center", behavior: "smooth" })));
-    setTimeout(() => setHl(null), 6000);
+    setTimeout(() => setFlash(null), 6000);
+  }
+
+  function onMark(id: string) {
+    setSide("marks");
+    setChatOpen(true);
+    setFocus(false);
+    setActiveMark(id);
+    if (window.matchMedia("(max-width: 760px)").matches) setView("chat");
+    requestAnimationFrame(() => requestAnimationFrame(() => document.getElementById(`m-${id}`)?.scrollIntoView({ block: "center", behavior: "smooth" })));
+  }
+
+  async function setNote(id: string, note: string) {
+    if (!current) return;
+    const r = await api(`/api/items/${current.id}/highlights/${id}`, { method: "PATCH", body: JSON.stringify({ note }) });
+    if (r.ok) setHighlights((hs) => hs.map((h) => (h.id === id ? { ...h, note } : h)));
+  }
+
+  async function removeMark(id: string) {
+    if (!current) return;
+    const r = await api(`/api/items/${current.id}/highlights/${id}`, { method: "DELETE" });
+    if (r.ok) setHighlights((hs) => hs.filter((h) => h.id !== id));
   }
 
   async function signOut() {
@@ -127,6 +165,7 @@ export default function Page() {
     if (!current || !confirm(`„${current.title}“ endgültig löschen?`)) return;
     await api(`/api/items/${current.id}`, { method: "DELETE" });
     setCurrent(null);
+    setHighlights([]);
     setView("library");
     reload();
   }
@@ -134,6 +173,7 @@ export default function Page() {
   const Filter = ({ label, on, set }: { label: string; on: boolean; set: () => void }) => (
     <button className={on ? "active" : ""} onClick={set}>{label}</button>
   );
+  const isBookmark = current?.type === "bookmark";
 
   return (
     <div className="app">
@@ -142,24 +182,31 @@ export default function Page() {
         <div className="right">
           <span>{items.length} Inhalte</span>
           {process.env.NEXT_PUBLIC_SUPABASE_URL && <button className="txt-btn" onClick={signOut}>Abmelden</button>}
-          <button className="txt-btn desktop-only" onClick={() => setChatOpen((o) => !o)}>{chatOpen ? "Chat ausblenden »" : "« Chat einblenden"}</button>
+          <button className="txt-btn desktop-only" onClick={() => setChatOpen((o) => !o)}>{chatOpen ? "Seitenleiste ausblenden »" : "« Seitenleiste einblenden"}</button>
         </div>
       </header>
 
       <nav className="mobile-tabs">
         {(["library", "reader", "chat"] as View[]).map((v) => (
           <button key={v} className={view === v ? "active" : ""} onClick={() => setView(v)}>
-            {{ library: "Bibliothek", reader: "Lesen", chat: "Chat" }[v]}
+            {{ library: "Bibliothek", reader: "Lesen", chat: "KI" }[v]}
           </button>
         ))}
       </nav>
 
-      <main className={`layout ${chatOpen ? "chat-open" : "chat-closed"}`} data-view={view}>
+      <main className={`layout ${chatOpen ? "chat-open" : "chat-closed"}${focus ? " focus" : ""}`} data-view={view}>
         {/* ── Bibliothek ── */}
         <section className="pane pane-library">
+          <div className="mode-switch" role="tablist">
+            <button className={mode === "read" ? "active" : ""} onClick={() => setMode("read")}>Lesen</button>
+            <button className={mode === "bookmark" ? "active" : ""} onClick={() => setMode("bookmark")}>Lesezeichen</button>
+          </div>
           <div className="add-bar">
-            <input value={url} onChange={(e) => setUrl(e.target.value)} onKeyDown={(e) => e.key === "Enter" && add()} placeholder="Artikel-URL einfügen" inputMode="url" />
+            <input value={url} onChange={(e) => setUrl(e.target.value)} onKeyDown={(e) => e.key === "Enter" && add()} placeholder={mode === "bookmark" ? "Link als Lesezeichen speichern" : "Artikel-URL einfügen"} inputMode="url" />
             <button className="btn" disabled={busy} onClick={add}>{busy ? "…" : "+ Neu"}</button>
+          </div>
+          <div className="add-bar">
+            <input value={newTags} onChange={(e) => setNewTags(e.target.value)} onKeyDown={(e) => e.key === "Enter" && add()} placeholder="Tags (optional), z. B. tools" />
           </div>
           {msg && (
             <div className={`msg ${msg.info ? "info" : ""}`}>
@@ -200,51 +247,46 @@ export default function Page() {
 
         {/* ── Lesansicht ── */}
         <section className="pane pane-reader">
-          <div className="section-label">Lesen</div>
-          <div className="pane-scroll" ref={readerRef} onScroll={onScroll}>
-            {!current ? (
-              <div className="empty-note">Inhalt in der Bibliothek auswählen.</div>
-            ) : (
-              <article className="reader">
-                <h2>{current.title}</h2>
-                <div className="reader-meta">
-                  <span>{current.source}</span><span>{TYPE_LABEL[current.type]}</span>
-                  <span>{new Date(current.createdAt).toLocaleDateString("de-DE")}</span>
-                </div>
-                <div className="reader-actions">
-                  {current.url && <a href={current.url} target="_blank" rel="noopener noreferrer">Original öffnen ↗</a>}
-                  <button className="btn-small" onClick={() => patch({ status: current.status === "read" ? "unread" : "read" })}>
-                    {current.status === "read" ? "Als ungelesen markieren" : "Als gelesen markieren"}
-                  </button>
-                  <a href={`/api/items/${current.id}/export?format=md`}>Markdown</a>
-                  <a href={`/api/items/${current.id}/export?format=json`}>JSON</a>
-                  <button className="txt-btn del" onClick={remove}>Löschen</button>
-                </div>
-                <div className="tag-edit">
-                  <input className="tag-input" value={tagDraft} onChange={(e) => setTagDraft(e.target.value)} placeholder="Tags, durch Komma getrennt" />
-                  <button className="btn-small" onClick={() => patch({ tags: tagDraft })}>Tags speichern</button>
-                </div>
-                {current.textStatus !== "ok" && (
-                  <div className="note-box warn">Kein Text extrahiert. Bei dynamisch geladenen oder angemeldeten Seiten hilft später die Safari-Erweiterung.</div>
-                )}
-                {current.blocks.map((b, idx) => (
-                  <p key={idx} id={`b${idx}`} className={`block${hl && idx >= hl.start && idx <= hl.end ? " hl" : ""}`}><span className="block-no">{idx + 1}</span>{b}</p>
-                ))}
-              </article>
-            )}
-          </div>
+          <Reader
+            item={current}
+            highlights={highlights}
+            prefs={prefs}
+            onPrefs={changePrefs}
+            focus={focus}
+            onFocus={() => setFocus((f) => !f)}
+            active={view === "reader"}
+            flash={flash}
+            tagDraft={tagDraft}
+            onTagDraft={setTagDraft}
+            onPatch={patch}
+            onRemove={remove}
+            onAddHighlights={(list) => setHighlights((hs) => [...hs, ...list].sort((a, b) => a.block - b.block || a.start - b.start))}
+            onMark={onMark}
+            onPosition={savePosition}
+          />
         </section>
 
-        {/* ── KI-Chat ── */}
+        {/* ── KI und Markierungen ── */}
         <aside className="pane pane-chat">
-          <div className="section-label">KI</div>
+          <div className="side-tabs">
+            <button className={side === "ai" ? "active" : ""} onClick={() => setSide("ai")}>KI</button>
+            <button className={side === "marks" ? "active" : ""} onClick={() => setSide("marks")}>Markierungen{highlights.length > 0 ? ` (${highlights.length})` : ""}</button>
+          </div>
           <div className="pane-scroll">
-            <AiPanel item={current} onJump={jump} onSummary={(summary: Summary) => setCurrent((c) => (c ? { ...c, summary } : c))} />
+            {isBookmark ? (
+              <div className="empty-note">Lesezeichen speichern nur den Link. KI und Markierungen gibt es für gespeicherte Texte.</div>
+            ) : side === "ai" ? (
+              <AiPanel item={current} onJump={jump} onSummary={(summary: Summary) => setCurrent((c) => (c ? { ...c, summary } : c))} />
+            ) : current ? (
+              <MarksPanel highlights={highlights} active={activeMark} onJump={(b) => jump(b, b)} onNote={setNote} onRemove={removeMark} />
+            ) : (
+              <div className="empty-note">Zuerst einen Inhalt auswählen.</div>
+            )}
           </div>
         </aside>
       </main>
 
-      <footer className="colophon"><span>Artikel · PDF · YouTube · Podcast</span><span>v0.1</span></footer>
+      <footer className="colophon"><span>Artikel · PDF · YouTube · Podcast · Lesezeichen</span><span>v0.2</span></footer>
     </div>
   );
 }

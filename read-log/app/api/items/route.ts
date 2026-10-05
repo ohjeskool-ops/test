@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { ImportError, importArticle } from "@/lib/import";
+import { ImportError, importArticle, importBookmark } from "@/lib/import";
 import { getStore, unauthorized } from "@/lib/get-store";
 import type { ContentType, ReadStatus } from "@/lib/types";
 
@@ -23,7 +23,10 @@ export async function POST(req: Request) {
   if (!store) return unauthorized();
   const body = await req.json().catch(() => ({}));
   try {
-    const item = await importArticle(store, { url: body.url, html: body.html, tags: body.tags });
+    const item =
+      body.kind === "bookmark"
+        ? await importBookmark(store, { url: body.url, html: body.html, title: body.title, tags: body.tags })
+        : await importArticle(store, { url: body.url, html: body.html, tags: body.tags });
     return NextResponse.json({ id: item.id, textStatus: item.textStatus }, { status: 201 });
   } catch (e) {
     if (e instanceof ImportError) {

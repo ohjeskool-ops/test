@@ -101,3 +101,52 @@ input, textarea { font-family: inherit; }
 .chat-form input { flex: 1; min-width: 0; font-size: 12px; padding: 7px 10px; border: 1px solid var(--line); background: #fff; outline: none; }
 .chat-form input:focus { border-color: var(--ink); }
 .reader p.block.hl { background: #fdf0d0; transition: background .3s; box-shadow: -8px 0 0 #fdf0d0, 8px 0 0 #fdf0d0; }
+
+/* ── Saubere Leseansicht ── */
+.reader-bar { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; flex: none; }
+.reader-bar .section-label::after { display: none; }
+.reader-bar .txt-btn { font-weight: 700; white-space: nowrap; }
+.reader { max-width: calc(var(--rs) * 38); --rs: 18px; }
+.reader h2 { font-size: calc(var(--rs) * 1.55); line-height: 1.25; text-transform: none; letter-spacing: -.005em; margin-bottom: 10px; }
+.reader.serif h2, .reader.serif p.block { font-family: Georgia, "Iowan Old Style", "Palatino Linotype", "Times New Roman", serif; }
+.reader-meta { border-bottom: 0; padding-bottom: 0; margin-bottom: 28px; text-transform: none; letter-spacing: .02em; font-size: 12px; }
+.reader-meta a { color: var(--mute); text-decoration: underline; }
+.reader p.block { position: relative; font-size: var(--rs); line-height: 1.8; margin-bottom: 1.1em; }
+.reader.serif p.block { line-height: 1.75; }
+.reader .block-no { position: absolute; left: -2.6em; top: .25em; width: 2em; text-align: right; font-family: ui-monospace, monospace; font-size: 10px; color: #ccc; opacity: 0; transition: opacity .15s; }
+.reader p.block:hover .block-no { opacity: 1; }
+@media (max-width: 1100px) { .reader .block-no { display: none; } }
+.hl-mark { background: #fbe9a6; color: inherit; padding: 0 1px; border-radius: 2px; cursor: pointer; }
+.hl-mark:hover { background: #f7dc7a; }
+.reader-details { margin: 36px 0 10px; border-top: 1px solid var(--line-soft); padding-top: 12px; font-size: 12px; }
+.reader-details summary { cursor: pointer; color: var(--mute); text-transform: uppercase; letter-spacing: .1em; font-size: 10px; font-weight: 700; }
+.reader-details .reader-actions { margin: 12px 0; }
+.reader-details .reader-actions a { color: var(--mute); }
+.bookmark-card { border: 1px solid var(--line-soft); background: #fff; padding: 16px; margin-bottom: 16px; }
+.bookmark-card p { font-size: 14px; margin-bottom: 12px; color: #444; }
+
+/* Fokusmodus: nur der Text */
+.layout.focus, .layout.focus.chat-open, .layout.focus.chat-closed { grid-template-columns: minmax(0, 1fr); gap: 0; }
+.layout.focus .pane-library, .layout.focus .pane-chat { display: none; }
+.layout.focus .reader { margin: 0 auto; }
+
+/* Markieren-Leiste */
+.sel-bar { position: fixed; left: 50%; bottom: 56px; transform: translateX(-50%); z-index: 30; box-shadow: 0 6px 22px rgba(0,0,0,.18); }
+
+/* Seitenleiste: KI | Markierungen */
+.side-tabs { display: flex; gap: 20px; border-bottom: 1px solid var(--line); margin-bottom: 12px; flex: none; }
+.side-tabs button { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; background: none; border: none; color: #999; cursor: pointer; padding: 4px 0 6px; margin-bottom: -1px; border-bottom: 2px solid transparent; }
+.side-tabs button.active { color: var(--ink); border-bottom-color: var(--ink); }
+.marks { display: flex; flex-direction: column; }
+.mark-item { padding: 10px 0; border-bottom: 1px solid var(--line-soft); }
+.mark-item.active { background: #fdf6dc; margin: 0 -6px; padding: 10px 6px; }
+.mark-quote { display: block; width: 100%; text-align: left; background: none; border: none; border-left: 3px solid #f2c744; padding: 0 0 0 10px; font-size: 13px; line-height: 1.6; cursor: pointer; color: var(--ink); }
+.mark-meta { display: flex; justify-content: space-between; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--mute); margin: 6px 0 4px 13px; }
+.mark-note { width: calc(100% - 13px); margin-left: 13px; font-size: 12px; padding: 5px 8px; border: 1px solid #e8e6e1; background: #fff; resize: vertical; outline: none; }
+.mark-note:focus { border-color: var(--ink); }
+
+/* Lesen / Lesezeichen beim Hinzufügen */
+.mode-switch { display: flex; gap: 0; margin-bottom: 8px; flex: none; }
+.mode-switch button { flex: 1; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; padding: 5px 0; background: none; border: 1px solid var(--line); color: #999; cursor: pointer; }
+.mode-switch button + button { border-left: 0; }
+.mode-switch button.active { background: var(--ink); color: var(--paper); border-color: var(--ink); }

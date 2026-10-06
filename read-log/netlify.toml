@@ -1,0 +1,11 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  # Die PIN ist eine kurze Zahl und taucht zufällig in Paketdateien auf (Fehlalarm).
+  # Sie wird nur zur Laufzeit gelesen und landet in keiner Build-Datei.
+  SECRETS_SCAN_OMIT_KEYS = "APP_PIN"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"

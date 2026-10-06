@@ -23,11 +23,6 @@ Design nach job-log (Monospace, Papierton, Haarlinien).
 - Markierungen: Text auswählen und „Markieren“; auch über mehrere Absätze. Mit Notiz, in der Datenbank gespeichert, im Markdown- und JSON-Export enthalten
 - Lesezeichen: Beim Hinzufügen zwischen „Lesen“ und „Lesezeichen“ wählen. Speichert Link, Titel und Beschreibung (Open Graph), mit Tags und eigenem Filter; wenn die Seite nicht abrufbar ist, wird trotzdem gespeichert
 
-## Design
-Nach yabayay (= job_log): Mono auf Papier, Versalien-Labels, Haarlinien, Eingabe nur mit Unterlinie, umrandete Knöpfe, keine Karten oder Schatten.
-Lesetext in Mono wie im job_log (Serif auf Wunsch umschaltbar), Textmarker in der job_log-Fläche `#fdf0d0`, Randnotiz im Stil der Einschätzungszeile.
-Seitenbreite 1200 px wie im job_log. Der Aufbau (drei Spalten, Eingabe in der Bibliothek) bleibt Read-Log-eigen.
-
 ## Noch offen
 PDF, YouTube, Podcasts (Deepgram austauschbar), OCR, Safari-Erweiterung,
 Supabase-Store für den Sync (Schema: `supabase/schema.sql`), Anmeldung.

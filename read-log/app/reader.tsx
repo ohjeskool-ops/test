@@ -111,18 +111,18 @@ export function Reader(props: {
   return (
     <>
       <div className="reader-bar">
-        <span className="section-label">Lesen</span>
-        <button title="Schrift kleiner" onClick={() => props.onPrefs({ ...prefs, size: Math.max(12, prefs.size - 1) })}>A−</button>
-        <button title="Schrift größer" onClick={() => props.onPrefs({ ...prefs, size: Math.min(22, prefs.size + 1) })}>A+</button>
-        <button title="Schriftart wechseln" onClick={() => props.onPrefs({ ...prefs, serif: !prefs.serif })}>{prefs.serif ? "Serif" : "Mono"}</button>
-        <button className="desktop-only" title="Bibliothek und Seitenleiste ausblenden" onClick={props.onFocus}>{props.focus ? "Fokus aus" : "Fokus"}</button>
+        <span className="section-label" style={{ margin: 0, flex: 1 }}>Lesen</span>
+        <button className="txt-btn" title="Schrift kleiner" onClick={() => props.onPrefs({ ...prefs, size: Math.max(14, prefs.size - 1) })}>A−</button>
+        <button className="txt-btn" title="Schrift größer" onClick={() => props.onPrefs({ ...prefs, size: Math.min(26, prefs.size + 1) })}>A+</button>
+        <button className="txt-btn" title="Schriftart wechseln" onClick={() => props.onPrefs({ ...prefs, serif: !prefs.serif })}>{prefs.serif ? "Serif" : "Mono"}</button>
+        <button className="txt-btn desktop-only" title="Bibliothek und KI ausblenden" onClick={props.onFocus}>{props.focus ? "Fokus aus" : "Fokus"}</button>
       </div>
 
       <div className="pane-scroll" ref={scrollRef} onScroll={onScroll}>
         {!item ? (
           <div className="empty-note">Inhalt in der Bibliothek auswählen.</div>
         ) : (
-          <div className="reader-wrap"><article className={`reader ${prefs.serif ? "serif" : "mono"}`} style={{ ["--rs" as string]: `${prefs.size}px` }}>
+          <article className={`reader ${prefs.serif ? "serif" : ""}`} style={{ ["--rs" as string]: `${prefs.size}px` }}>
             <h2>{item.title}</h2>
             <div className="reader-meta">
               <span>{item.source}</span>
@@ -134,38 +134,27 @@ export function Reader(props: {
             {isBookmark ? (
               <div className="bookmark-card">
                 {item.blocks[0] && <p>{item.blocks[0]}</p>}
-                {item.url && <a className="btn-small" href={item.url} target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", textDecoration: "none" }}>Seite öffnen ↗</a>}
+                {item.url && <a className="btn" href={item.url} target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", textDecoration: "none" }}>Seite öffnen ↗</a>}
               </div>
             ) : (
               <>
                 {item.textStatus !== "ok" && <div className="note-box warn">Kein Text extrahiert. Bei dynamisch geladenen oder angemeldeten Seiten hilft das Lesezeichen für den Import aus dem Browser.</div>}
                 {item.blocks.map((b, idx) => {
-                  const hs = byBlock.get(idx) ?? [];
-                  const pieces = splitByHighlights(b, hs.map((h) => ({ id: h.id, start: h.start, end: h.end })));
+                  const pieces = splitByHighlights(b, (byBlock.get(idx) ?? []).map((h) => ({ id: h.id, start: h.start, end: h.end })));
                   const flashed = flash && idx >= flash.start && idx <= flash.end;
-                  const notes = hs.filter((h) => h.note.trim());
                   return (
-                    <div key={idx} className="para">
-                      <p id={`b${idx}`} className={`block${flashed ? " hl" : ""}`}>
-                        <span className="block-no">{idx + 1}</span>
-                        <span className="block-text" data-b={idx}>
-                          {pieces.map((p, i) =>
-                            p.hid ? (
-                              <mark key={i} className="mg-hl" onClick={() => props.onMark(p.hid!)}>{p.text}</mark>
-                            ) : (
-                              <span key={i}>{p.text}</span>
-                            ),
-                          )}
-                        </span>
-                      </p>
-                      {notes.length > 0 && (
-                        <div>
-                          {notes.map((h) => (
-                            <div key={h.id} className="mg-note" onClick={() => props.onMark(h.id)}>{h.note}</div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                    <p key={idx} id={`b${idx}`} className={`block${flashed ? " hl" : ""}`}>
+                      <span className="block-no">{idx + 1}</span>
+                      <span className="block-text" data-b={idx}>
+                        {pieces.map((p, i) =>
+                          p.hid ? (
+                            <mark key={i} className="hl-mark" onClick={() => props.onMark(p.hid!)}>{p.text}</mark>
+                          ) : (
+                            <span key={i}>{p.text}</span>
+                          ),
+                        )}
+                      </span>
+                    </p>
                   );
                 })}
               </>
@@ -186,13 +175,13 @@ export function Reader(props: {
                 <button className="btn-small" onClick={() => props.onPatch({ tags: props.tagDraft })}>Tags speichern</button>
               </div>
             </details>
-          </article></div>
+          </article>
         )}
       </div>
 
       {sel.length > 0 && !isBookmark && (
         <div className="sel-bar" onMouseDown={(e) => e.preventDefault()}>
-          <button className="btn-small" onClick={mark} disabled={saving}>{saving ? "…" : "Markieren"}</button>
+          <button className="btn" onClick={mark} disabled={saving}>{saving ? "…" : "Markieren"}</button>
         </div>
       )}
     </>

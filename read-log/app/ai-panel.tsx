@@ -87,7 +87,7 @@ export function AiPanel({ item, onJump, onSummary }: { item: Item | null; onJump
     <div className="ai">
       <div className="ai-block">
         <div className="ai-head">
-          <span className="section-label">Zusammenfassung</span>
+          <b>Zusammenfassung</b>
           <button className="btn-small" disabled={sumBusy || noText} onClick={() => summarize(!!item.summary)}>
             {sumBusy ? "…" : item.summary ? "Neu erstellen" : "Zusammenfassen"}
           </button>
@@ -98,7 +98,7 @@ export function AiPanel({ item, onJump, onSummary }: { item: Item | null; onJump
 
       <div className="ai-block ai-chat">
         <div className="ai-head">
-          <span className="section-label">Fragen an dieses Dokument</span>
+          <b>Fragen an dieses Dokument</b>
           {messages.length > 0 && <button className="txt-btn" onClick={clear}>Verlauf löschen</button>}
         </div>
         <div className="chat-list">
@@ -125,7 +125,7 @@ export function AiPanel({ item, onJump, onSummary }: { item: Item | null; onJump
         {error && <div className="msg">{error}</div>}
         <form className="chat-form" onSubmit={send}>
           <input value={input} onChange={(e) => setInput(e.target.value)} placeholder={noText ? "Kein Text vorhanden" : "Frage stellen …"} disabled={noText || sending} maxLength={4000} />
-          <button className="btn-small" disabled={noText || sending || !input.trim()}>Senden</button>
+          <button className="btn" disabled={noText || sending || !input.trim()}>Senden</button>
         </form>
       </div>
     </div>

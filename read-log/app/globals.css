@@ -25,7 +25,6 @@ input, textarea { font-family: inherit; }
 .masthead .date { font-size: 12px; color: var(--graphite); }
 .reload-btn { font-size: 11px; background: none; border: none; color: var(--muted-2); cursor: pointer; letter-spacing: .06em; padding: 0; }
 .reload-btn:hover { color: var(--ink); }
-.profile { font-size: 12px; color: var(--ink-3); border-left: 2px solid var(--ink); padding: 6px 12px; margin-bottom: 12px; flex: none; }
 .sync-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; font-size: 11px; color: var(--muted); flex: none; }
 .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ghost); flex-shrink: 0; }
 .sync-dot.live { background: var(--positive); }
@@ -61,8 +60,7 @@ input, textarea { font-family: inherit; }
 .filters button.active { color: var(--ink); font-weight: 700; border-bottom: 1px solid var(--ink); }
 
 /* Eingabe: nur Unterlinie; Knöpfe umrandet, Hover invertiert */
-.add-bar { display: flex; gap: 8px; margin-bottom: 18px; flex: none; }
-.add-bar .add-tags { flex: 0 0 170px; }
+.add-bar { display: flex; gap: 8px; margin-bottom: 10px; flex: none; }
 .add-bar input, .search-bar input, .chat-form input, .tag-input { flex: 1; min-width: 0; font-size: 12px; padding: 7px 2px; background: transparent; border: none; border-bottom: 1px solid var(--ghost); border-radius: 0; color: var(--ink); outline: none; }
 .add-bar input:focus, .search-bar input:focus, .chat-form input:focus, .tag-input:focus { border-bottom-color: var(--ink); }
 .add-bar input::placeholder, .search-bar input::placeholder, .chat-form input::placeholder, .tag-input::placeholder { color: var(--faint); }
@@ -181,9 +179,7 @@ p.block.hl { border-left: 2px solid var(--ink); padding-left: 10px; margin-left:
   .feed-icons { gap: 0; }
   .reader { --rs: 14px; }
   /* Beim Lesen und in der KI nur das Nötigste im Kopf; in der Bibliothek kompakt */
-  .profile { display: none; }
-  .app:not(.view-library) .sync-bar, .app:not(.view-library) .market, .app:not(.view-library) .add-bar, .app:not(.view-library) .msg, .app:not(.view-library) .tabs:not(.mobile-tabs) { display: none; }
+  .app:not(.view-library) .sync-bar, .app:not(.view-library) .market, .app:not(.view-library) .add-bar, .app:not(.view-library) .msg { display: none; }
   .market { display: none; }
   .pane-library > .section-label { display: none; }
-  .add-bar .add-tags { flex: 1 1 100%; }
 }

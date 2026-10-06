@@ -26,7 +26,7 @@ Design nach job-log (Monospace, Papierton, Haarlinien).
 ## Design
 Nach yabayay (= job_log): Mono auf Papier, Versalien-Labels, Haarlinien, Eingabe nur mit Unterlinie, umrandete Knöpfe, keine Karten oder Schatten.
 Lesetext in Mono wie im job_log (Serif auf Wunsch umschaltbar), Textmarker in der job_log-Fläche `#fdf0d0`, Randnotiz im Stil der Einschätzungszeile.
-Aufbau wie job_log: Profilzeile, Reiter, Kennzahlen, Eingabezeile über den Spalten, 1200 px. Drei Spalten statt zwei.
+Seitenbreite 1200 px wie im job_log. Der Aufbau (drei Spalten, Eingabe in der Bibliothek) bleibt Read-Log-eigen.
 
 ## Noch offen
 PDF, YouTube, Podcasts (Deepgram austauschbar), OCR, Safari-Erweiterung,

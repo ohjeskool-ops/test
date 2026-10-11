@@ -304,20 +304,83 @@
     ['t', 78, 30, 28, '?'],
   ];
 
-  /* ---------- Ausmal-Bild: einfache Fläche je Region ---------- */
-  const SCENE = [
-    ['sky', 'M0 0 L140 0 L140 100 L0 100 Z', '#F3F8FC'],
-    ['sun', Ci(112, 24, 13), '#FFFBF2'],
-    ['cloud', 'M22 42 C12 42 12 30 22 30 C22 20 38 18 42 28 C50 22 62 28 58 38 C66 40 64 48 56 48 L26 48 C18 48 16 42 22 42 Z', '#FFFBF2'],
-    ['ground', 'M0 78 Q40 66 80 74 T140 70 L140 100 L0 100 Z', '#FFFBF2'],
-    ['wall', 'M44 54 L44 84 L92 84 L92 54 Z', '#FFFBF2'],
-    ['roof', 'M38 56 L68 30 L98 56 Z', '#FFFBF2'],
-    ['door', 'M62 66 L62 84 L74 84 L74 66 Z', '#FFFBF2'],
-    ['window', 'M50 62 L58 62 L58 70 L50 70 Z', '#FFFBF2'],
-    ['trunk', 'M112 62 L112 84 L120 84 L120 62 Z', '#FFFBF2'],
-    ['crown', E(116, 48, 17, 16), '#FFFBF2'],
-    ['flower', Ci(22, 76, 6), '#FFFBF2'],
+  /* ---------- Ausmalbilder: je Thema ein Bild, Fläche für Fläche ---------- */
+  const W = '#FFFBF2';
+  const RECT = 'M0 0 L140 0 L140 100 L0 100 Z';
+  const dot = (x, y, r) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${INK}" stroke="none"/>`;
+  const digit = (x, y, t) => `<text x="${x}" y="${y}" font-size="12" font-weight="700" text-anchor="middle" fill="${INK}" stroke="none" font-family="ui-rounded,'SF Pro Rounded',-apple-system,sans-serif">${t}</text>`;
+  const SCENES = {
+    farben: {
+      regions: [
+        ['sky', RECT, '#F3F8FC'], ['sun', Ci(112, 24, 13), W],
+        ['cloud', 'M22 42 C12 42 12 30 22 30 C22 20 38 18 42 28 C50 22 62 28 58 38 C66 40 64 48 56 48 L26 48 C18 48 16 42 22 42 Z', W],
+        ['ground', 'M0 78 Q40 66 80 74 T140 70 L140 100 L0 100 Z', W],
+        ['wall', 'M44 54 L44 84 L92 84 L92 54 Z', W], ['roof', 'M38 56 L68 30 L98 56 Z', W],
+        ['door', 'M62 66 L62 84 L74 84 L74 66 Z', W], ['window', 'M50 62 L58 62 L58 70 L50 70 Z', W],
+        ['trunk', 'M112 62 L112 84 L120 84 L120 62 Z', W], ['crown', E(116, 48, 17, 16), W], ['flower', Ci(22, 76, 6), W],
+      ],
+      deco: '<path d="M22 82 L22 94 M22 88 Q14 86 12 80 M22 88 Q30 86 32 80"/>',
+    },
+    tiere: {
+      regions: [
+        ['water', RECT, '#EEF6FB'], ['sand', 'M0 82 Q35 74 70 82 T140 80 L140 100 L0 100 Z', W],
+        ['alge1', 'M20 84 Q8 68 22 56 Q16 70 28 84 Z', W], ['alge2', 'M114 84 Q102 70 114 58 Q110 72 124 84 Z', W],
+        ['tail', 'M92 50 L130 26 Q122 50 130 74 Z', W], ['fin', 'M52 33 Q66 10 82 33 Z', W],
+        ['body', E(66, 50, 31, 21), W], ['belly', 'M40 54 Q66 72 92 56 Q66 64 40 54 Z', W],
+        ['bubble1', Ci(26, 36, 5), W], ['bubble2', Ci(20, 22, 3.5), W], ['bubble3', Ci(32, 12, 3), W],
+      ],
+      deco: dot(48, 45, 3.4) + '<path d="M36 52 Q40 55 44 53"/><path d="M55 40 Q51 50 55 60"/><path d="M68 44 Q72 48 68 52 M78 43 Q82 48 78 55"/>',
+    },
+    essen: {
+      regions: [
+        ['wand', RECT, '#F6F1E8'], ['tisch', 'M0 80 L140 80 L140 100 L0 100 Z', W],
+        ['apfel', 'M44 28 C34 20 20 28 22 44 C24 56 34 62 44 58 C54 62 64 56 66 44 C68 28 54 20 44 28 Z', W],
+        ['blatt', 'M46 24 Q56 12 66 18 Q58 28 46 24 Z', W],
+        ['banane', 'M62 54 C70 22 100 20 118 36 C122 40 118 44 114 42 C98 32 82 36 74 56 Z', W],
+        ['orange', Ci(88, 40, 15), W],
+        ['korb', 'M26 60 L114 60 L102 94 L38 94 Z', W], ['rand', 'M20 54 L120 54 L120 64 L20 64 Z', W],
+      ],
+      deco: '<path d="M32 72 L108 72 M36 82 L104 82 M50 64 L52 94 M70 64 L70 94 M90 64 L88 94"/>',
+    },
+    gefuehle: {
+      regions: [
+        ['bg', RECT, '#F4EEF8'], ['face', Ci(70, 58, 37), W],
+        ['bowL', 'M70 18 L50 8 L50 30 Z', W], ['bowR', 'M70 18 L90 8 L90 30 Z', W], ['knot', Ci(70, 19, 5), W],
+        ['cheekL', Ci(44, 68, 7), W], ['cheekR', Ci(96, 68, 7), W],
+        ['mouth', 'M46 68 Q70 96 94 68 Q70 74 46 68 Z', W],
+        ['eyeL', Ci(54, 52, 8), W], ['eyeR', Ci(86, 52, 8), W],
+      ],
+      deco: dot(55, 53, 3.6) + dot(87, 53, 3.6) + '<path d="M44 40 Q54 33 62 40 M78 40 Q86 33 96 40"/><path d="M70 56 Q66 64 70 66"/>',
+    },
+    zahlen: {
+      regions: [
+        ['himmel', RECT, '#EAF4FA'], ['sonne', Ci(120, 18, 10), W],
+        ['wiese', 'M0 76 Q35 68 70 74 T140 72 L140 100 L0 100 Z', W],
+        ['s1', Ci(14, 66, 11), W], ['s2', Ci(32, 62, 11), W], ['s3', Ci(50, 66, 11), W], ['s4', Ci(68, 62, 11), W], ['s5', Ci(86, 66, 11), W],
+        ['kopf', Ci(108, 60, 15), W],
+      ],
+      deco: '<path d="M14 77 L14 85 M32 73 L32 81 M50 77 L50 85 M68 73 L68 81 M86 77 L86 85"/>' +
+        ['١', '٢', '٣', '٤', '٥'].map((t, n) => digit(14 + n * 18, (n % 2 ? 66 : 70), t)).join('') +
+        dot(104, 55, 2.6) + dot(114, 55, 2.6) + '<path d="M103 65 Q109 71 116 65"/><path d="M103 46 Q99 36 94 33 M113 46 Q117 36 122 33"/>',
+    },
+    sinne: {
+      regions: [
+        ['bg', RECT, '#EDF3FA'], ['haar', E(70, 46, 38, 34), W],
+        ['ohrL', E(35, 64, 8, 12), W], ['ohrR', E(105, 64, 8, 12), W],
+        ['kopf', E(70, 62, 32, 36), W],
+        ['augeL', 'M44 54 Q54 44 64 54 Q54 64 44 54 Z', W], ['augeR', 'M76 54 Q86 44 96 54 Q86 64 76 54 Z', W],
+        ['nase', 'M70 54 L62 74 Q70 80 78 74 Z', W], ['mund', 'M52 86 Q70 100 88 86 Q70 90 52 86 Z', W],
+      ],
+      deco: dot(54, 54, 3.2) + dot(86, 54, 3.2) + '<path d="M44 44 Q54 38 64 44 M76 44 Q86 38 96 44"/>',
+    },
+  };
+
+  ART['game/finger'] = [
+    ['s', poly(72, 8, 92, 28, 52, 68, 32, 48), BROWN],
+    ['s', 'M32 48 L52 68 Q38 90 14 86 Q16 62 32 48 Z', RED],
+    ['h', 'M70 20 L84 34'],
   ];
+
 
   function render(ops) {
     let out = '';
@@ -363,16 +426,35 @@
       `<path d="${d}" fill="none" stroke="${INK}" stroke-width="2"/></g></svg>`;
   }
 
-  function scene(fills) {
-    const regions = SCENE.map(([id, d, def]) =>
+  const FRAME = 'viewBox="-2 -2 144 104"';
+  const sceneOf = (catId) => SCENES[catId] || SCENES.farben;
+
+  /* Antippen-Bild: jede Fläche eine Farbe */
+  function scene(catId, fills) {
+    const S = sceneOf(catId);
+    const regions = S.regions.map(([id, d, def]) =>
       `<path class="region" data-act="m-fill" data-r="${id}" d="${d}" fill="${fills[id] || def}"/>`).join('');
-    return `<svg class="scene" viewBox="-2 -2 144 104" aria-label="Ausmalbild"><g filter="url(#sketch)" stroke="${INK}" stroke-width="1.5" stroke-linejoin="round">${regions}` +
-      `<path d="M22 82 L22 94 M22 88 Q14 86 12 80 M22 88 Q30 86 32 80" fill="none" stroke-linecap="round" pointer-events="none"/></g></svg>`;
+    return `<svg class="scene" ${FRAME} aria-label="Ausmalbild"><g filter="url(#sketch)" stroke="${INK}" stroke-width="1.5" stroke-linejoin="round">${regions}` +
+      `<g fill="none" stroke-linecap="round" pointer-events="none">${S.deco}</g></g></svg>`;
+  }
+
+  /* Finger-Bild: pro Fläche eine zugeschnittene Malschicht, Linien liegen darüber */
+  function paintScene(catId) {
+    const S = sceneOf(catId);
+    const pid = 'p' + uid++;
+    const defs = S.regions.map(([id, d]) => `<clipPath id="${pid}-${id}"><path d="${d}"/></clipPath>`).join('');
+    const layers = S.regions.map(([id, d, def]) =>
+      `<path class="region" data-r="${id}" d="${d}" fill="${def}"/><g class="paint" data-r="${id}" clip-path="url(#${pid}-${id})"></g>`).join('');
+    const lines = S.regions.map(([, d]) => `<path d="${d}" fill="none"/>`).join('');
+    return `<svg class="scene paint" ${FRAME} aria-label="Ausmalbild zum Malen mit dem Finger"><defs>${defs}</defs>${layers}` +
+      `<g filter="url(#sketch)" stroke="${INK}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" pointer-events="none">${lines}` +
+      `<g fill="none">${S.deco}</g></g></svg>`;
   }
 
   window.Sketch = {
     get: (key) => (ART[key] ? render(ART[key]) : null),
     scene,
+    paintScene,
     color: colorSketch,
     motif: (catId, itemId) => (ART[`${catId}/${itemId}`] ? render(ART[`${catId}/${itemId}`]) : null),
     nav: (catId) => (ART[`nav/${catId}`] ? render(ART[`nav/${catId}`]) : null),

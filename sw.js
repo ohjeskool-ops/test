@@ -1,4 +1,4 @@
-const CACHE = 'arabisch-v6';
+const CACHE = 'arabisch-v7';
 const FILES = ['./', 'index.html', 'style.css', 'app.js', 'art.js', 'data.js', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-180.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {

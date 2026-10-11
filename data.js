@@ -99,4 +99,15 @@ const CATEGORIES = [
       { id: 'feuer', ar: 'نَار', tr: 'nar', de: 'Feuer', sense: 'hand' },
     ],
   },
+  {
+    // Aus dem Arbeitsheft (Seite 8): Tiere und ihre Bewegung. Sätze wie im Buch (Hocharabisch).
+    id: 'bewegung', de: 'Bewegung', ar: 'حَرَكَات', icon: '🏃', tint: '#E6E2C4', type: 'emoji',
+    items: [
+      { id: 'fliegen', ar: 'عُصْفُورٌ يَطِيرُ', tr: '\u02BFusfur yatir', de: 'Der Vogel fliegt', emoji: '🐦' },
+      { id: 'rennen', ar: 'حِصَانٌ يَجْرِي', tr: 'hisan yadschri', de: 'Das Pferd rennt', emoji: '🐴' },
+      { id: 'klettern', ar: 'قِرْدٌ يَتَسَلَّقُ', tr: 'qird yatasallaq', de: 'Der Affe klettert', emoji: '🐵' },
+      { id: 'schwimmen', ar: 'سَمَكَةٌ تَسْبَحُ', tr: 'samaka tasbah', de: 'Der Fisch schwimmt', emoji: '🐟' },
+      { id: 'springen', ar: 'أَرْنَبٌ يَقْفِزُ', tr: 'arnab yaqfiz', de: 'Der Hase springt', emoji: '🐰' },
+    ],
+  },
 ];

@@ -244,20 +244,242 @@
     ['s', Ci(34, 38, 7), RED], ['s', Ci(54, 28, 7), YELLOW], ['s', Ci(74, 38, 7), BLUE], ['s', Ci(30, 60, 7), GREEN],
   ];
 
-  /* ---------- Ausmal-Bild: einfache Fläche je Region ---------- */
-  const SCENE = [
-    ['sky', 'M0 0 L140 0 L140 100 L0 100 Z', '#F3F8FC'],
-    ['sun', Ci(112, 24, 13), '#FFFBF2'],
-    ['cloud', 'M22 42 C12 42 12 30 22 30 C22 20 38 18 42 28 C50 22 62 28 58 38 C66 40 64 48 56 48 L26 48 C18 48 16 42 22 42 Z', '#FFFBF2'],
-    ['ground', 'M0 78 Q40 66 80 74 T140 70 L140 100 L0 100 Z', '#FFFBF2'],
-    ['wall', 'M44 54 L44 84 L92 84 L92 54 Z', '#FFFBF2'],
-    ['roof', 'M38 56 L68 30 L98 56 Z', '#FFFBF2'],
-    ['door', 'M62 66 L62 84 L74 84 L74 66 Z', '#FFFBF2'],
-    ['window', 'M50 62 L58 62 L58 70 L50 70 Z', '#FFFBF2'],
-    ['trunk', 'M112 62 L112 84 L120 84 L120 62 Z', '#FFFBF2'],
-    ['crown', E(116, 48, 17, 16), '#FFFBF2'],
-    ['flower', Ci(22, 76, 6), '#FFFBF2'],
+
+  /* ---------- Sinne: Körperteile ---------- */
+  const SKIN = '#F4C7A8';
+  ART['sinne/auge'] = [
+    ['s', 'M8 52 Q50 16 92 52 Q50 88 8 52 Z', WHITE],
+    ['s', Ci(50, 52, 17), '#7A5A3A'], ['d', 50, 52, 7.5], ['c', Ci(44, 46, 3.4), WHITE],
+    ['l', 'M24 40 L19 32'], ['l', 'M36 31 L33 22'], ['l', 'M50 27 L50 17'], ['l', 'M64 31 L67 22'], ['l', 'M77 40 L82 32'],
   ];
+  ART['sinne/ohr'] = [
+    ['s', 'M46 10 C20 10 12 40 22 58 C28 70 38 72 40 84 C42 94 60 96 66 84 C72 72 64 62 72 48 C82 24 68 10 46 10 Z', SKIN],
+    ['l', 'M46 26 C32 26 30 44 38 54 C42 60 44 62 44 72'], ['l', 'M54 34 C60 40 58 48 52 52'],
+  ];
+  ART['sinne/nase'] = [
+    ['s', 'M50 12 C55 40 58 52 70 62 C80 72 72 88 58 84 C54 82 46 82 42 84 C28 88 20 72 30 62 C42 52 45 40 50 12 Z', SKIN],
+    ['s', E(39, 74, 5.5, 3.6), '#B5654A'], ['s', E(61, 74, 5.5, 3.6), '#B5654A'],
+    ['h', 'M46 36 Q47 48 43 56'],
+  ];
+  ART['sinne/mund'] = [
+    ['s', 'M10 50 C24 32 38 32 50 42 C62 32 76 32 90 50 C76 56 62 56 50 54 C38 56 24 56 10 50 Z', '#E5707A'],
+    ['s', 'M10 50 C26 56 38 58 50 56 C62 58 74 56 90 50 C82 74 62 80 50 80 C38 80 18 74 10 50 Z', '#EE8B92'],
+    ['l', 'M10 50 C26 57 38 57 50 55 C62 57 74 57 90 50'], ['h', 'M36 68 Q50 74 64 68'],
+  ];
+  ART['sinne/hand'] = [
+    ['s', 'M32 94 C26 80 24 70 22 58 L17 38 C15 31 24 29 27 35 L33 50 L33 18 C33 10 44 10 44 18 L44 44 L47 10 C47 2 58 2 58 10 L58 44 L62 16 C63 8 73 11 71 19 L67 48 L73 30 C76 23 85 27 82 34 L75 60 C73 74 71 82 67 94 Z', SKIN],
+    ['l', 'M40 70 Q50 76 60 70'],
+  ];
+
+  /* ---------- Dinge für „Welcher Sinn?" ---------- */
+  ART['dinge/blume'] = [
+    ['l', 'M50 52 L50 94'], ['s', 'M50 84 Q28 80 24 64 Q44 64 50 84 Z', GREEN], ['s', 'M50 76 Q70 74 76 60 Q58 58 50 76 Z', GREEN],
+    ['s', Ci(50, 24, 11), PINK], ['s', Ci(65, 35, 11), PINK], ['s', Ci(59, 53, 11), PINK], ['s', Ci(41, 53, 11), PINK], ['s', Ci(35, 35, 11), PINK],
+    ['s', Ci(50, 41, 9), YELLOW],
+  ];
+  ART['dinge/fernseher'] = [
+    ['l', 'M50 24 L34 8'], ['l', 'M50 24 L66 8'],
+    ['s', 'M10 24 L90 24 L90 76 L10 76 Z', '#4A5570'], ['s', 'M17 31 L83 31 L83 69 L17 69 Z', BLUE],
+    ['h', 'M24 40 L42 36'], ['d', 74, 50, 1.6], ['l', 'M36 86 L64 86'], ['l', 'M50 76 L50 86'],
+  ];
+  ART['dinge/radio'] = [
+    ['l', 'M76 34 L90 10'],
+    ['s', 'M10 34 L90 34 L90 86 L10 86 Z', '#E2A55C'], ['s', Ci(34, 60, 17), CREAM],
+    ['l', 'M24 60 L44 60'], ['l', 'M26 52 L42 52'], ['l', 'M26 68 L42 68'],
+    ['s', Ci(70, 50, 6), BROWN], ['s', Ci(70, 70, 6), BROWN],
+  ];
+  ART['dinge/zitrone'] = [
+    ['s', 'M4 52 L14 46 Q20 32 50 30 Q80 32 86 46 L96 52 L86 58 Q80 72 50 74 Q20 72 14 58 Z', YELLOW],
+    ['s', 'M52 30 Q62 14 76 18 Q68 32 52 30 Z', GREEN], ['h', 'M26 48 Q30 40 40 38'],
+    ['d', 40, 56, 1.1], ['d', 58, 62, 1.1], ['d', 68, 50, 1.1],
+  ];
+  ART['dinge/feuer'] = [
+    ['s', 'M50 8 C58 28 78 38 74 62 C72 78 60 90 50 90 C38 90 26 78 26 62 C26 48 36 44 38 30 C44 36 46 28 50 8 Z', ORANGE],
+    ['s', 'M50 44 C54 54 62 58 60 72 C58 80 54 84 50 84 C44 84 40 78 40 70 C40 60 48 56 50 44 Z', YELLOW],
+    ['s', 'M16 90 L84 90 L84 98 L16 98 Z', BROWN],
+  ];
+  ART['nav/sinne'] = ART['sinne/auge'];
+  ART['game/sinn'] = [
+    ['s', 'M8 52 Q50 16 92 52 Q50 88 8 52 Z', WHITE], ['s', Ci(50, 52, 17), '#7A5A3A'], ['d', 50, 52, 7.5],
+    ['t', 78, 30, 28, '?'],
+  ];
+
+  /* ---------- Beispielwörter fürs Alphabet (nur Wörter ohne eigene Zeichnung) ---------- */
+  ART['wort/haus'] = [
+    ['s', 'M66 34 L66 20 L77 20 L77 40 Z', '#C9625A'],
+    ['s', 'M20 48 L20 86 L80 86 L80 48 Z', '#F2D9B8'], ['s', poly(12, 50, 50, 16, 88, 50), RED],
+    ['s', 'M42 62 L42 86 L58 86 L58 62 Z', BROWN], ['s', 'M26 58 L36 58 L36 68 L26 68 Z', BLUE], ['s', 'M64 58 L74 58 L74 68 L64 68 Z', BLUE],
+  ];
+  ART['wort/papagei'] = [
+    ['s', 'M50 90 L44 98 L56 98 Z', BLUE],
+    ['s', 'M44 14 C24 14 20 40 28 58 C34 74 36 88 46 92 L58 92 C70 80 74 56 70 40 C66 22 58 14 44 14 Z', RED],
+    ['s', 'M40 48 C52 46 62 56 60 74 C48 74 40 64 40 48 Z', '#C9423C'],
+    ['s', 'M28 26 C14 24 10 38 20 42 C26 40 30 34 28 26 Z', YELLOW], ['s', Ci(38, 28, 6), WHITE], ['d', 38, 28, 3],
+    ['l', 'M20 92 L84 92'],
+  ];
+  ART['wort/fuchs'] = [
+    ['s', poly(18, 40, 26, 10, 44, 28), ORANGE], ['s', poly(82, 40, 74, 10, 56, 28), ORANGE],
+    ['s', 'M50 86 C26 80 16 56 20 40 C34 30 66 30 80 40 C84 56 74 80 50 86 Z', ORANGE],
+    ['s', 'M50 86 C40 82 34 70 40 60 C46 56 54 56 60 60 C66 70 60 82 50 86 Z', WHITE],
+    ['d', 50, 63, 3.6], ['d', 36, 52, 2.8], ['d', 64, 52, 2.8],
+  ];
+  ART['wort/mais'] = [
+    ['s', 'M50 10 C66 14 70 40 66 66 C62 84 56 90 50 90 C44 90 38 84 34 66 C30 40 34 14 50 10 Z', YELLOW],
+    ['l', 'M42 24 L44 82'], ['l', 'M50 14 L50 88'], ['l', 'M58 24 L56 82'], ['l', 'M36 40 L64 40'], ['l', 'M35 56 L65 56'], ['l', 'M37 72 L63 72'],
+    ['s', 'M50 94 C30 86 22 62 28 42 C36 58 44 74 50 94 Z', GREEN], ['s', 'M50 94 C70 86 78 62 72 42 C64 58 56 74 50 94 Z', GREEN],
+  ];
+  ART['wort/granatapfel'] = [
+    ['s', Ci(50, 56, 30), RED], ['s', poly(38, 30, 41, 14, 50, 24, 59, 14, 62, 30), '#C9423C'],
+    ['h', 'M30 50 Q32 42 40 38'], ['d', 52, 60, 1.4], ['d', 60, 52, 1.4], ['d', 44, 66, 1.4], ['d', 62, 68, 1.4],
+  ];
+  ART['wort/sonne'] = [
+    ['l', 'M50 8 L50 22'], ['l', 'M50 78 L50 92'], ['l', 'M8 50 L22 50'], ['l', 'M78 50 L92 50'],
+    ['l', 'M20 20 L30 30'], ['l', 'M70 70 L80 80'], ['l', 'M80 20 L70 30'], ['l', 'M20 80 L30 70'],
+    ['s', Ci(50, 50, 22), YELLOW], ['d', 43, 46, 2.4], ['d', 57, 46, 2.4], ['l', 'M42 56 Q50 62 58 56'],
+  ];
+  ART['wort/rakete'] = [
+    ['s', 'M42 66 L50 94 L58 66 Z', ORANGE],
+    ['s', 'M38 52 L22 76 L38 70 Z', RED], ['s', 'M62 52 L78 76 L62 70 Z', RED],
+    ['s', 'M50 8 C64 22 66 46 62 68 L38 68 C34 46 36 22 50 8 Z', '#EDEAF2'],
+    ['s', 'M50 8 C58 16 62 24 63 32 L37 32 C38 24 42 16 50 8 Z', RED], ['s', Ci(50, 46, 8), BLUE],
+  ];
+  ART['wort/frosch'] = [
+    ['s', E(50, 62, 32, 24), GREEN], ['s', Ci(32, 38, 10), GREEN], ['s', Ci(68, 38, 10), GREEN],
+    ['s', Ci(32, 38, 5), WHITE], ['s', Ci(68, 38, 5), WHITE], ['d', 32, 39, 2.6], ['d', 68, 39, 2.6],
+    ['l', 'M26 68 Q50 86 74 68'], ['d', 45, 58, 1.4], ['d', 55, 58, 1.4],
+  ];
+  ART['wort/flugzeug'] = [
+    ['s', 'M14 44 L8 22 L28 42 Z', BLUE],
+    ['s', 'M10 52 C10 44 20 42 30 42 L80 42 C92 42 96 48 96 52 C96 56 92 62 80 62 L30 62 C20 62 10 60 10 52 Z', '#EDEAF2'],
+    ['s', 'M44 54 L28 82 L50 82 L66 54 Z', BLUE], ['s', 'M80 42 C88 42 92 46 92 50 L78 50 Z', BLUE],
+    ['s', Ci(36, 52, 3), BLUE], ['s', Ci(48, 52, 3), BLUE], ['s', Ci(60, 52, 3), BLUE],
+  ];
+  ART['wort/briefumschlag'] = [
+    ['s', 'M12 28 L88 28 L88 76 L12 76 Z', CREAM], ['s', 'M70 34 L82 34 L82 46 L70 46 Z', PINK],
+    ['l', 'M12 28 L50 56 L88 28'], ['l', 'M12 76 L38 50'], ['l', 'M88 76 L62 50'],
+  ];
+  ART['wort/wolke'] = [
+    ['s', 'M24 66 C10 66 8 46 24 42 C24 24 50 20 56 36 C68 26 90 36 84 54 C96 56 94 70 80 70 Z', '#E6F0FA'],
+    ['l', 'M30 80 L26 90'], ['l', 'M50 80 L46 90'], ['l', 'M70 80 L66 90'],
+  ];
+  ART['wort/affe'] = [
+    ['s', 'M62 86 C88 86 90 62 76 58 C80 66 74 76 64 76 Z', BROWN],
+    ['s', Ci(28, 38, 8), BROWN], ['s', Ci(72, 38, 8), BROWN],
+    ['s', E(50, 76, 16, 18), BROWN], ['s', E(50, 78, 9, 11), '#F2D3B3'],
+    ['s', Ci(50, 40, 20), BROWN], ['s', E(50, 46, 13, 11), '#F2D3B3'],
+    ['d', 44, 40, 2.6], ['d', 56, 40, 2.6], ['l', 'M44 51 Q50 55 56 51'],
+  ];
+  ART['wort/mond'] = [
+    ['s', Ci(50, 50, 32), '#FBE29A'], ['s', Ci(40, 40, 6), '#EBCF7A'], ['s', Ci(60, 58, 8), '#EBCF7A'], ['s', Ci(42, 66, 4), '#EBCF7A'],
+    ['h', 'M30 44 Q32 34 42 28'],
+  ];
+  ART['wort/hilal'] = [
+    ['s', 'M60 12 C36 16 22 40 28 62 C34 84 62 92 82 78 C58 78 46 58 52 40 C56 28 62 20 60 12 Z', YELLOW],
+    ['s', poly(76, 24, 79, 33, 88, 33, 81, 39, 84, 48, 76, 42, 68, 48, 71, 39, 64, 33, 73, 33), YELLOW],
+  ];
+  ART['wort/rose'] = [
+    ['l', 'M50 52 L50 94'], ['s', 'M50 84 Q28 80 24 64 Q44 64 50 84 Z', GREEN], ['s', 'M50 76 Q70 74 76 60 Q58 58 50 76 Z', GREEN],
+    ['s', Ci(50, 34, 20), '#D9424E'], ['l', 'M50 20 Q38 28 44 40 Q54 46 58 34'], ['l', 'M42 30 Q50 26 58 32'],
+  ];
+
+  /* ---------- Bewegung: Tiere mit Bewegungslinien ---------- */
+  const without = (ops, bad) => ops.filter((o) => !bad.includes(o[1]));
+  ART['bewegung/fliegen'] = [...without(ART['tiere/vogel'], ['M20 94 L80 94', 'M42 82 L42 92', 'M52 82 L52 92']),
+    ['l', 'M4 22 L24 22'], ['l', 'M2 34 L18 34'], ['l', 'M6 46 L20 46']];
+  ART['bewegung/rennen'] = [...ART['tiere/pferd'], ['l', 'M2 36 L14 36'], ['l', 'M0 50 L12 50'], ['l', 'M4 64 L16 64']];
+  ART['bewegung/klettern'] = [['s', 'M0 8 L100 8 L100 18 L0 18 Z', BROWN], ['s', 'M34 60 C22 48 26 30 34 16 L42 20 C38 34 38 46 44 58 Z', BROWN], ...ART['wort/affe'].slice(0)];
+  ART['bewegung/schwimmen'] = [...ART['tiere/fisch'], ['l', 'M4 86 Q14 80 24 86 Q34 92 44 86 Q54 80 64 86 Q74 92 84 86 Q90 83 96 86'], ['l', 'M14 96 Q24 90 34 96 Q44 102 54 96']];
+  ART['bewegung/springen'] = [...ART['tiere/hase'], ['l', 'M6 86 Q2 60 16 42'], ['l', 'M14 94 Q8 72 22 54']];
+  ART['nav/bewegung'] = ART['bewegung/springen'];
+
+  /* ---------- Ausmalbilder: je Thema ein Bild, Fläche für Fläche ---------- */
+  const W = '#FFFBF2';
+  const RECT = 'M0 0 L140 0 L140 100 L0 100 Z';
+  const dot = (x, y, r) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${INK}" stroke="none"/>`;
+  const digit = (x, y, t) => `<text x="${x}" y="${y}" font-size="12" font-weight="700" text-anchor="middle" fill="${INK}" stroke="none" font-family="ui-rounded,'SF Pro Rounded',-apple-system,sans-serif">${t}</text>`;
+  const SCENES = {
+    farben: {
+      regions: [
+        ['sky', RECT, '#F3F8FC'], ['sun', Ci(112, 24, 13), W],
+        ['cloud', 'M22 42 C12 42 12 30 22 30 C22 20 38 18 42 28 C50 22 62 28 58 38 C66 40 64 48 56 48 L26 48 C18 48 16 42 22 42 Z', W],
+        ['ground', 'M0 78 Q40 66 80 74 T140 70 L140 100 L0 100 Z', W],
+        ['wall', 'M44 54 L44 84 L92 84 L92 54 Z', W], ['roof', 'M38 56 L68 30 L98 56 Z', W],
+        ['door', 'M62 66 L62 84 L74 84 L74 66 Z', W], ['window', 'M50 62 L58 62 L58 70 L50 70 Z', W],
+        ['trunk', 'M112 62 L112 84 L120 84 L120 62 Z', W], ['crown', E(116, 48, 17, 16), W], ['flower', Ci(22, 76, 6), W],
+      ],
+      deco: '<path d="M22 82 L22 94 M22 88 Q14 86 12 80 M22 88 Q30 86 32 80"/>',
+    },
+    tiere: {
+      regions: [
+        ['water', RECT, '#EEF6FB'], ['sand', 'M0 82 Q35 74 70 82 T140 80 L140 100 L0 100 Z', W],
+        ['alge1', 'M20 84 Q8 68 22 56 Q16 70 28 84 Z', W], ['alge2', 'M114 84 Q102 70 114 58 Q110 72 124 84 Z', W],
+        ['tail', 'M92 50 L130 26 Q122 50 130 74 Z', W], ['fin', 'M52 33 Q66 10 82 33 Z', W],
+        ['body', E(66, 50, 31, 21), W], ['belly', 'M40 54 Q66 72 92 56 Q66 64 40 54 Z', W],
+        ['bubble1', Ci(26, 36, 5), W], ['bubble2', Ci(20, 22, 3.5), W], ['bubble3', Ci(32, 12, 3), W],
+      ],
+      deco: dot(48, 45, 3.4) + '<path d="M36 52 Q40 55 44 53"/><path d="M55 40 Q51 50 55 60"/><path d="M68 44 Q72 48 68 52 M78 43 Q82 48 78 55"/>',
+    },
+    essen: {
+      regions: [
+        ['wand', RECT, '#F6F1E8'], ['tisch', 'M0 80 L140 80 L140 100 L0 100 Z', W],
+        ['apfel', 'M44 28 C34 20 20 28 22 44 C24 56 34 62 44 58 C54 62 64 56 66 44 C68 28 54 20 44 28 Z', W],
+        ['blatt', 'M46 24 Q56 12 66 18 Q58 28 46 24 Z', W],
+        ['banane', 'M62 54 C70 22 100 20 118 36 C122 40 118 44 114 42 C98 32 82 36 74 56 Z', W],
+        ['orange', Ci(88, 40, 15), W],
+        ['korb', 'M26 60 L114 60 L102 94 L38 94 Z', W], ['rand', 'M20 54 L120 54 L120 64 L20 64 Z', W],
+      ],
+      deco: '<path d="M32 72 L108 72 M36 82 L104 82 M50 64 L52 94 M70 64 L70 94 M90 64 L88 94"/>',
+    },
+    gefuehle: {
+      regions: [
+        ['bg', RECT, '#F4EEF8'], ['face', Ci(70, 58, 37), W],
+        ['bowL', 'M70 18 L50 8 L50 30 Z', W], ['bowR', 'M70 18 L90 8 L90 30 Z', W], ['knot', Ci(70, 19, 5), W],
+        ['cheekL', Ci(44, 68, 7), W], ['cheekR', Ci(96, 68, 7), W],
+        ['mouth', 'M46 68 Q70 96 94 68 Q70 74 46 68 Z', W],
+        ['eyeL', Ci(54, 52, 8), W], ['eyeR', Ci(86, 52, 8), W],
+      ],
+      deco: dot(55, 53, 3.6) + dot(87, 53, 3.6) + '<path d="M44 40 Q54 33 62 40 M78 40 Q86 33 96 40"/><path d="M70 56 Q66 64 70 66"/>',
+    },
+    zahlen: {
+      regions: [
+        ['himmel', RECT, '#EAF4FA'], ['sonne', Ci(120, 18, 10), W],
+        ['wiese', 'M0 76 Q35 68 70 74 T140 72 L140 100 L0 100 Z', W],
+        ['s1', Ci(14, 66, 11), W], ['s2', Ci(32, 62, 11), W], ['s3', Ci(50, 66, 11), W], ['s4', Ci(68, 62, 11), W], ['s5', Ci(86, 66, 11), W],
+        ['kopf', Ci(108, 60, 15), W],
+      ],
+      deco: '<path d="M14 77 L14 85 M32 73 L32 81 M50 77 L50 85 M68 73 L68 81 M86 77 L86 85"/>' +
+        ['١', '٢', '٣', '٤', '٥'].map((t, n) => digit(14 + n * 18, (n % 2 ? 66 : 70), t)).join('') +
+        dot(104, 55, 2.6) + dot(114, 55, 2.6) + '<path d="M103 65 Q109 71 116 65"/><path d="M103 46 Q99 36 94 33 M113 46 Q117 36 122 33"/>',
+    },
+    sinne: {
+      regions: [
+        ['bg', RECT, '#EDF3FA'], ['haar', E(70, 46, 38, 34), W],
+        ['ohrL', E(35, 64, 8, 12), W], ['ohrR', E(105, 64, 8, 12), W],
+        ['kopf', E(70, 62, 32, 36), W],
+        ['augeL', 'M44 54 Q54 44 64 54 Q54 64 44 54 Z', W], ['augeR', 'M76 54 Q86 44 96 54 Q86 64 76 54 Z', W],
+        ['nase', 'M70 54 L62 74 Q70 80 78 74 Z', W], ['mund', 'M52 86 Q70 100 88 86 Q70 90 52 86 Z', W],
+      ],
+      deco: dot(54, 54, 3.2) + dot(86, 54, 3.2) + '<path d="M44 44 Q54 38 64 44 M76 44 Q86 38 96 44"/>',
+    },
+  };
+
+  SCENES.bewegung = {
+    regions: [
+      ['himmel', RECT, '#EAF4FA'], ['wiese', 'M0 82 Q35 74 70 82 T140 80 L140 100 L0 100 Z', W],
+      ['stamm', 'M96 98 L100 46 L114 46 L118 98 Z', W], ['krone', Ci(106, 30, 24), W],
+      ['schwanz', 'M54 80 C80 80 82 54 68 52 C72 62 66 72 56 70 Z', W],
+      ['ohrL', Ci(26, 42, 7), W], ['ohrR', Ci(58, 42, 7), W],
+      ['koerper', E(42, 72, 16, 19), W], ['kopf', Ci(42, 42, 17), W], ['gesicht', E(42, 47, 11, 9), W],
+    ],
+    deco: dot(37, 41, 2.6) + dot(47, 41, 2.6) + '<path d="M37 51 Q42 55 47 51"/>',
+  };
+
+  ART['game/finger'] = [
+    ['s', poly(72, 8, 92, 28, 52, 68, 32, 48), BROWN],
+    ['s', 'M32 48 L52 68 Q38 90 14 86 Q16 62 32 48 Z', RED],
+    ['h', 'M70 20 L84 34'],
+  ];
+
 
   function render(ops) {
     let out = '';
@@ -303,16 +525,35 @@
       `<path d="${d}" fill="none" stroke="${INK}" stroke-width="2"/></g></svg>`;
   }
 
-  function scene(fills) {
-    const regions = SCENE.map(([id, d, def]) =>
+  const FRAME = 'viewBox="-2 -2 144 104"';
+  const sceneOf = (catId) => SCENES[catId] || SCENES.farben;
+
+  /* Antippen-Bild: jede Fläche eine Farbe */
+  function scene(catId, fills) {
+    const S = sceneOf(catId);
+    const regions = S.regions.map(([id, d, def]) =>
       `<path class="region" data-act="m-fill" data-r="${id}" d="${d}" fill="${fills[id] || def}"/>`).join('');
-    return `<svg class="scene" viewBox="-2 -2 144 104" aria-label="Ausmalbild"><g filter="url(#sketch)" stroke="${INK}" stroke-width="1.5" stroke-linejoin="round">${regions}` +
-      `<path d="M22 82 L22 94 M22 88 Q14 86 12 80 M22 88 Q30 86 32 80" fill="none" stroke-linecap="round" pointer-events="none"/></g></svg>`;
+    return `<svg class="scene" ${FRAME} aria-label="Ausmalbild"><g filter="url(#sketch)" stroke="${INK}" stroke-width="1.5" stroke-linejoin="round">${regions}` +
+      `<g fill="none" stroke-linecap="round" pointer-events="none">${S.deco}</g></g></svg>`;
+  }
+
+  /* Finger-Bild: pro Fläche eine zugeschnittene Malschicht, Linien liegen darüber */
+  function paintScene(catId) {
+    const S = sceneOf(catId);
+    const pid = 'p' + uid++;
+    const defs = S.regions.map(([id, d]) => `<clipPath id="${pid}-${id}"><path d="${d}"/></clipPath>`).join('');
+    const layers = S.regions.map(([id, d, def]) =>
+      `<path class="region" data-r="${id}" d="${d}" fill="${def}"/><g class="paint" data-r="${id}" clip-path="url(#${pid}-${id})"></g>`).join('');
+    const lines = S.regions.map(([, d]) => `<path d="${d}" fill="none"/>`).join('');
+    return `<svg class="scene paint" ${FRAME} aria-label="Ausmalbild zum Malen mit dem Finger"><defs>${defs}</defs>${layers}` +
+      `<g filter="url(#sketch)" stroke="${INK}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" pointer-events="none">${lines}` +
+      `<g fill="none">${S.deco}</g></g></svg>`;
   }
 
   window.Sketch = {
     get: (key) => (ART[key] ? render(ART[key]) : null),
     scene,
+    paintScene,
     color: colorSketch,
     motif: (catId, itemId) => (ART[`${catId}/${itemId}`] ? render(ART[`${catId}/${itemId}`]) : null),
     nav: (catId) => (ART[`nav/${catId}`] ? render(ART[`nav/${catId}`]) : null),

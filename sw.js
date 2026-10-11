@@ -1,5 +1,5 @@
-const CACHE = 'arabisch-v5';
-const FILES = ['./', 'index.html', 'style.css', 'app.js', 'art.js', 'data.js', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-180.png', 'icons/icon-512.png'];
+const CACHE = 'arabisch-v8';
+const FILES = ['./', 'index.html', 'style.css', 'app.js', 'art.js', 'data.js', 'alphabet.js', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-180.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)).then(() => self.skipWaiting()));

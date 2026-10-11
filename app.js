@@ -256,6 +256,7 @@
     { id: 'zaehlen', de: 'Zähl mit!' },
     { id: 'geben', de: 'Gib mir …' },
     { id: 'malen', de: 'Ausmalen' },
+    { id: 'sinn', de: 'Welcher Sinn?' },
   ];
   const objects = () => ['tiere', 'essen'].flatMap((cid) => catById(cid).items.map((it) => ({ cid, it })));
   const pickObjects = (k) => shuffle(objects()).slice(0, k);
@@ -299,7 +300,7 @@
   }
 
   function renderGame() {
-    return { suche: renderSuche, zaehlen: renderZaehlen, geben: renderGeben, malen: renderMalen }[view.game]();
+    return { suche: renderSuche, zaehlen: renderZaehlen, geben: renderGeben, malen: renderMalen, sinn: renderSinn }[view.game]();
   }
 
   /* -- Such mich! -- */
@@ -429,6 +430,40 @@
     }, 1900);
   }
 
+  /* -- Welcher Sinn? -- */
+  function startSinn() {
+    const c = catById('sinne');
+    go({ name: 'game', game: 'sinn', cat: 'sinne', i: 0, mistakes: 0, busy: false, rounds: shuffle(c.extra) });
+    speak(c, view.rounds[0]);
+  }
+  function renderSinn() {
+    const c = catById('sinne');
+    const thing = view.rounds[view.i];
+    const opts = c.items.map((o) => `<button class="opt" data-act="n-pick" data-id="${o.id}" aria-label="${o.de}">${visual(c, o, true)}<span class="ar olabel">${o.ar}</span></button>`).join('');
+    return `${topbar(c, dotsHtml(view.rounds.length, view.i), 'Welcher Sinn?')}
+      <div class="prompt">
+        <button class="speaker sm" data-act="n-ask" aria-label="Nochmal anhören">${ICON.speaker}</button>
+        <div class="thing"><div class="visual sm">${Sketch.get('dinge/' + thing.id)}</div><span class="ar">${thing.ar}</span></div>
+      </div>
+      <div class="options five">${opts}</div>
+      <div class="praise" id="praise"></div>`;
+  }
+  function nPick(el) {
+    if (view.busy) return;
+    const c = catById('sinne');
+    const thing = view.rounds[view.i];
+    if (el.dataset.id !== thing.sense) { view.mistakes += 1; el.classList.add('dim'); return; }
+    view.busy = true;
+    el.classList.add('ok');
+    app.querySelectorAll('.opt').forEach((o) => { o.classList.add('locked'); if (o !== el) o.classList.add('dim'); });
+    document.getElementById('praise').innerHTML = STAR;
+    speak(c, c.items.find((x) => x.id === thing.sense));
+    later(() => {
+      if (view.i + 1 < view.rounds.length) { view.i += 1; view.busy = false; render(); speak(c, view.rounds[view.i]); }
+      else finishGame(view.mistakes);
+    }, 1800);
+  }
+
   /* -- Ausmalen -- */
   function startMalen() {
     go({ name: 'game', game: 'malen', cat: 'farben', color: catById('farben').items[0].id, fills: {} });
@@ -460,7 +495,7 @@
   function renderParent() {
     const cats = CATEGORIES.map((c) => `
       <div class="cat-title">${c.icon} ${c.de}</div>
-      ${c.items.map((it) => {
+      ${[...c.items, ...(c.extra || [])].map((it) => {
         const k = keyOf(c, it);
         const has = recs.has(k);
         const live = recordingKey === k;
@@ -515,7 +550,7 @@
   function playRec(k) {
     const [cid, iid] = k.split('/');
     const c = catById(cid);
-    speak(c, c.items.find((x) => x.id === iid));
+    speak(c, [...c.items, ...(c.extra || [])].find((x) => x.id === iid));
   }
 
   /* ---------- Eltern-Zugang: 2 Sekunden gedrückt halten ---------- */
@@ -542,7 +577,7 @@
         break;
       }
       case 'games': go({ name: 'games', cat: view.cat }); break;
-      case 'g-start': ({ suche: startSuche, zaehlen: startZaehlen, geben: startGeben, malen: startMalen })[el.dataset.g](); break;
+      case 'g-start': ({ suche: startSuche, zaehlen: startZaehlen, geben: startGeben, malen: startMalen, sinn: startSinn })[el.dataset.g](); break;
       case 's-pick': sPick(el); break;
       case 's-ask': speak(c, view.targets[view.i]); break;
       case 'z-tap': zTap(el); break;
@@ -551,6 +586,8 @@
       case 'g-ask': { const z = catById('zahlen'); speak(z, z.items[view.rounds[view.i].n - 1]); break; }
       case 'm-color': mColor(el); break;
       case 'm-fill': mFill(el); break;
+      case 'n-pick': nPick(el); break;
+      case 'n-ask': speak(catById('sinne'), view.rounds[view.i]); break;
       case 'm-reset': view.fills = {}; render(); break;
       case 'learn': go({ name: 'learn', cat: view.cat, idx: 0 }); speak(c, c.items[0]); break;
       case 'prev': view.idx -= 1; render(); speak(c, c.items[view.idx]); break;

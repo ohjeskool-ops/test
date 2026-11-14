@@ -28,7 +28,7 @@ Die App wird über GitHub Pages veröffentlicht (Workflow `.github/workflows/pag
 Lokal testen: `python3 -m http.server 8123` und `http://localhost:8123` öffnen.
 
 ## Khait (Prototyp) – `khait/`
-Ein zweiter, neu gedachter Zugang unter `/khait/`: Jede Schulwoche ist ein Stickmotiv (Tatreez), fünf kurze Übungen sind fünf Fäden. Pro Tag wächst ein Motiv nur um einen Faden.
+Ein zweiter, neu gedachter Zugang unter `/khait/`: Jede Schulwoche ist ein Stickmotiv (Tatreez), fünf kurze Übungen sind fünf Fäden. Die Tagesgrenze (ein neuer Faden pro Tag) ist optional und standardmäßig aus.
 - Inhalte der Schulwochen: `khait/lessons.js` (Buchstabe, Thema, Hausaufgaben, Gesprächsfragen, Motiv als 13×13-Raster).
 - Nutzt `data.js`, `alphabet.js`, `art.js` und die Eltern-Aufnahmen der bestehenden App mit. Die bestehende App bleibt unverändert.
-- Elternbereich: Zahnrad oben rechts 1,5 Sekunden halten.
+- Elternbereich: „Eltern“ oben rechts 1 Sekunde halten. Dort auch die Einstellungen.

@@ -27,6 +27,7 @@ jobs:
           mkdir _site
           cp index.html style.css app.js art.js alphabet.js data.js sw.js manifest.webmanifest _site/
           cp -r icons _site/icons
+          cp -r khait _site/khait
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

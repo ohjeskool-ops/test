@@ -26,3 +26,9 @@ Die App wird über GitHub Pages veröffentlicht (Workflow `.github/workflows/pag
 2. Für den Fokus: iOS-Einstellungen → Bedienungshilfen → „Geführter Zugriff" sperrt das iPad auf die App.
 
 Lokal testen: `python3 -m http.server 8123` und `http://localhost:8123` öffnen.
+
+## Khait (Prototyp) – `khait/`
+Ein zweiter, neu gedachter Zugang unter `/khait/`: Jede Schulwoche ist ein Stickmotiv (Tatreez), fünf kurze Übungen sind fünf Fäden. Pro Tag wächst ein Motiv nur um einen Faden.
+- Inhalte der Schulwochen: `khait/lessons.js` (Buchstabe, Thema, Hausaufgaben, Gesprächsfragen, Motiv als 13×13-Raster).
+- Nutzt `data.js`, `alphabet.js`, `art.js` und die Eltern-Aufnahmen der bestehenden App mit. Die bestehende App bleibt unverändert.
+- Elternbereich: Zahnrad oben rechts 1,5 Sekunden halten.

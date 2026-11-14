@@ -13,7 +13,13 @@
     },
   };
   let stars = store.get('stars', {});
-  let settings = { tr: true, letters: ['alif', 'ba', 'ta'], ...store.get('settings', {}) };
+  let settings = { tr: true, letters: ['alif', 'ba', 'ta'], lettersOff: [], ...store.get('settings', {}) };
+  // Fortschritt der Schulwochen: { <lessonId>: { units: {<unit>: true}, stars: {<unit>: 1-3}, hw: {<hwId>: true} } }
+  let lessonsProg = store.get('lessons', {});
+  const saveProg = () => store.set('lessons', lessonsProg);
+  const lessonProg = (id) => { if (!lessonsProg[id]) lessonsProg[id] = { units: {}, stars: {}, hw: {} }; return lessonsProg[id]; };
+  const lessonById = (id) => LESSONS.find((l) => l.id === id);
+  let run = null; // laufende Wochen-Abfolge { lesson, steps, i }
 
   /* ---------- Eigene Aufnahmen (IndexedDB) ---------- */
   const recs = new Map();
@@ -93,7 +99,12 @@
     id: 'alphabet', de: 'Buchstaben', ar: 'حُرُوف', icon: 'ا', tint: '#E4DDF5', type: 'emoji',
     items: ALPHABET.map((l) => ({ id: l.id, ar: l.name, tr: l.tr, de: `Buchstabe ${l.ch}` })),
   };
-  const catById = (id) => (id === 'alphabet' ? ALPHA_CAT : CATEGORIES.find((c) => c.id === id));
+  // Pseudo-Kategorie für die Gesprächsfragen der Eltern (Aufnahmen, Sprachausgabe)
+  const TALK_CAT = {
+    id: 'frage', de: 'Gesprächsfragen', ar: '', icon: '💬', tint: '#E4DDF5', type: 'emoji',
+    items: Object.entries(TALK).flatMap(([k, qs]) => qs.map((q, i) => ({ id: `${k}-${i}`, ar: q.ar, de: q.de, tr: '' }))),
+  };
+  const catById = (id) => (id === 'alphabet' ? ALPHA_CAT : id === 'frage' ? TALK_CAT : CATEGORIES.find((c) => c.id === id));
 
   function visual(cat, item, small) {
     let inner = '';
@@ -124,10 +135,13 @@
   const shuffle = (a) => { const b = a.slice(); for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; };
 
   /* ---------- Bildschirme ---------- */
-  let view = { name: 'learn', cat: CATEGORIES[0].id, idx: 0 };
+  let view = LESSONS.length
+    ? { name: 'week', cat: CATEGORIES[0].id, lid: LESSONS[0].id }
+    : { name: 'learn', cat: CATEGORIES[0].id, idx: 0 };
 
   function go(next) {
     if (recorder && next.name !== 'parent') recorder.stop();
+    if (!next.run) run = null;
     view = next;
     stopSound();
     render();
@@ -136,7 +150,7 @@
   function render() {
     const c = catById(view.cat);
     document.body.style.setProperty('--tint', c.tint);
-    const fn = { learn: renderLearn, quiz: renderQuiz, result: renderResult, parent: renderParent, games: renderGames, game: renderGame, alpha: renderAlpha, letter: renderLetter, agame: renderAGame, trace: renderTrace }[view.name];
+    const fn = { learn: renderLearn, quiz: renderQuiz, result: renderResult, parent: renderParent, games: renderGames, game: renderGame, week: renderWeek, weekdone: renderWeekDone, alpha: renderAlpha, letter: renderLetter, agame: renderAGame, trace: renderTrace }[view.name];
     app.innerHTML = renderNav() + `<div class="content screen">${fn()}</div>`;
     bindGate();
     if (view.name === 'game' && view.game === 'finger') bindPaint();
@@ -144,18 +158,25 @@
   }
 
   function renderNav() {
+    const inWeek = view.name === 'week' || view.name === 'weekdone' || !!view.run;
+    const woche = LESSONS.length ? `
+      <button class="nav-item ${inWeek ? 'active' : ''}" data-act="week" aria-label="Diese Woche">
+        <span class="ico">${Sketch.get('nav/woche')}</span>
+        <span class="stars">${starsText(weekStars(LESSONS[0]))}</span>
+      </button>` : '';
     const items = CATEGORIES.map((c) => `
-      <button class="nav-item ${view.name !== 'parent' && currentTab() !== 'alpha' && c.id === view.cat ? 'active' : ''}" data-act="open" data-cat="${c.id}" aria-label="${c.de}">
+      <button class="nav-item ${!inWeek && view.name !== 'parent' && currentTab() !== 'alpha' && c.id === view.cat ? 'active' : ''}" data-act="open" data-cat="${c.id}" aria-label="${c.de}">
         <span class="ico">${Sketch.nav(c.id) || c.icon}</span>
         <span class="stars">${starsText(stars[c.id] || 0)}</span>
       </button>`).join('');
-    return `<nav class="nav">${items}<button class="parent-gate" data-gate aria-label="Eltern">${ICON.gear}</button></nav>`;
+    return `<nav class="nav">${woche}${items}<button class="parent-gate" data-gate aria-label="Eltern">${ICON.gear}</button></nav>`;
   }
 
   const ALPHA_TOP = { ar: 'حُرُوف', de: 'Buchstaben' };
   const currentTab = () => ({ learn: 'learn', quiz: 'quiz', games: 'play', game: 'play', alpha: 'alpha', letter: 'alpha', agame: 'alpha', trace: 'alpha', result: view.tab }[view.name] || 'learn');
 
   function topbar(c, dots, label) {
+    if (view.run && run) return runBar();
     const tab = currentTab();
     const on = (n) => (tab === n ? 'on' : '');
     return `<div class="topbar">
@@ -189,19 +210,21 @@
           <div class="word-de">${item.de}</div>
         </button>
         ${last
-          ? `<button class="nav-btn quiz" data-act="quiz" aria-label="Zum Quiz">Quiz ${ICON.next}</button>`
+          ? (view.run
+            ? `<button class="nav-btn quiz" data-act="r-next" aria-label="Weiter">Weiter ${ICON.next}</button>`
+            : `<button class="nav-btn quiz" data-act="quiz" aria-label="Zum Quiz">Quiz ${ICON.next}</button>`)
           : `<button class="nav-btn" data-act="next" aria-label="Weiter">${ICON.next}</button>`}
       </div>`;
   }
 
-  function startQuiz(c) {
+  function startQuiz(c, ctx = {}) {
     const targets = shuffle(c.items).slice(0, ROUNDS);
     const rounds = targets.map((t) => ({
       target: t,
       options: shuffle([t, ...shuffle(c.items.filter((x) => x.id !== t.id)).slice(0, 2)]),
       mistake: false,
     }));
-    go({ name: 'quiz', cat: c.id, rounds, i: 0, busy: false });
+    go({ name: 'quiz', cat: c.id, rounds, i: 0, busy: false, ...ctx });
     speak(c, rounds[0].target);
   }
 
@@ -244,7 +267,7 @@
         const earned = good === view.rounds.length ? 3 : good >= view.rounds.length - 2 ? 2 : 1;
         stars[c.id] = Math.max(stars[c.id] || 0, earned);
         store.set('stars', stars);
-        go({ name: 'result', cat: c.id, earned, tab: 'quiz', next: 'learn' });
+        go({ name: 'result', cat: c.id, earned, tab: 'quiz', next: view.run ? 'r-next' : 'learn', run: view.run });
       }
     }, 1600);
   }
@@ -304,7 +327,7 @@
 
   function finishGame(mistakes, tab = 'play', next = 'games') {
     const earned = mistakes === 0 ? 3 : mistakes <= 2 ? 2 : 1;
-    go({ name: 'result', cat: view.cat, earned, tab, next });
+    go({ name: 'result', cat: view.cat, earned, tab, next: view.run ? 'r-next' : next, run: view.run });
   }
 
   function renderGames() {
@@ -320,12 +343,12 @@
   }
 
   /* -- Such mich! -- */
-  function startSuche() {
+  function startSuche(ctx = {}) {
     const c = catById(view.cat);
     const pool = shuffle(c.items).slice(0, 9);
     const pos = scatter(pool.length);
     const targets = shuffle(pool).slice(0, 5);
-    go({ name: 'game', game: 'suche', cat: c.id, field: pool.map((it, i) => ({ it, ...pos[i], found: false })), targets, i: 0, mistakes: 0, busy: false });
+    go({ name: 'game', game: 'suche', cat: c.id, field: pool.map((it, i) => ({ it, ...pos[i], found: false })), targets, i: 0, mistakes: 0, busy: false, ...ctx });
     speak(c, targets[0]);
   }
   function renderSuche() {
@@ -353,10 +376,10 @@
   }
 
   /* -- Zähl mit! -- */
-  function startZaehlen() {
+  function startZaehlen(ctx = {}) {
     const ns = numbers(10, 5);
     const objs = pickObjects(5);
-    go({ name: 'game', game: 'zaehlen', cat: view.cat, i: 0, busy: false,
+    go({ name: 'game', game: 'zaehlen', cat: view.cat, i: 0, busy: false, ...ctx,
       rounds: ns.map((n, i) => ({ n, obj: objs[i], pos: scatter(n), counted: [] })) });
   }
   function renderZaehlen() {
@@ -395,11 +418,11 @@
   }
 
   /* -- Gib mir … (Extra bei den Zahlen) -- */
-  function startGeben() {
+  function startGeben(ctx = {}) {
     const z = catById('zahlen');
     const ns = numbers(8, 5);
     const objs = pickObjects(5);
-    go({ name: 'game', game: 'geben', cat: 'zahlen', i: 0, mistakes: 0, busy: false,
+    go({ name: 'game', game: 'geben', cat: 'zahlen', i: 0, mistakes: 0, busy: false, ...ctx,
       rounds: ns.map((n, i) => ({ n, obj: objs[i], pos: scatter(Math.min(12, n + 4)), picked: [] })) });
     speak(z, z.items[ns[0] - 1]);
   }
@@ -448,9 +471,9 @@
   }
 
   /* -- Welcher Sinn? (Extra bei den Sinnen) -- */
-  function startSinn() {
+  function startSinn(ctx = {}) {
     const c = catById('sinne');
-    go({ name: 'game', game: 'sinn', cat: 'sinne', i: 0, mistakes: 0, busy: false, rounds: shuffle(c.extra) });
+    go({ name: 'game', game: 'sinn', cat: 'sinne', i: 0, mistakes: 0, busy: false, ...ctx, rounds: shuffle(c.extra) });
     speak(c, view.rounds[0]);
   }
   function renderSinn() {
@@ -487,8 +510,8 @@
   const BRUSH = [3.2, 6.5, 11];
   const NS = 'http://www.w3.org/2000/svg';
 
-  function startMalen() { go({ name: 'game', game: 'malen', cat: view.cat, color: colors().items[0].id, fills: {} }); }
-  function startFinger() { go({ name: 'game', game: 'finger', cat: view.cat, color: colors().items[0].id, size: 1, strokes: [] }); }
+  function startMalen(ctx = {}) { go({ name: 'game', game: 'malen', cat: view.cat, color: colors().items[0].id, fills: {}, ...ctx }); }
+  function startFinger(ctx = {}) { go({ name: 'game', game: 'finger', cat: view.cat, color: colors().items[0].id, size: 1, strokes: [], ...ctx }); }
 
   function paletteHtml() {
     const chips = colors().items.map((it) => `<button class="chip ${it.id === view.color ? 'sel' : ''}" data-act="m-color" data-id="${it.id}" style="--c:${it.color}" aria-label="${it.de}"></button>`).join('');
@@ -557,8 +580,11 @@
   const letterOf = (id) => ALPHABET.find((l) => l.id === id);
   const letterItem = (l) => ALPHA_CAT.items.find((i) => i.id === l.id);
   const sayLetter = (l) => speak(ALPHA_CAT, letterItem(l));
+  // Aktiv = vom Elternteil gewählt ODER in einer Schulwoche vorgekommen, es sei denn bewusst ausgeschaltet.
+  const lessonLetters = () => LESSONS.map((l) => l.letter);
+  const isActive = (id) => !settings.lettersOff.includes(id) && (settings.letters.includes(id) || lessonLetters().includes(id));
   const activeLetters = () => {
-    const a = ALPHABET.filter((l) => settings.letters.includes(l.id));
+    const a = ALPHABET.filter((l) => isActive(l.id));
     return a.length ? a : ALPHABET.slice(0, 3);
   };
   function sayWord(w) {
@@ -589,7 +615,7 @@
         <div class="visual sm">${Sketch.get(w.art) || ''}</div><span class="ar lw">${hl(w.ar)}</span>${trHtml(w, 'otr')}<span class="ode">${w.de}</span></button>`).join('');
     return `${topbar(ALPHA_TOP, '<span></span>')}
       <div class="letter">
-        <button class="nav-btn" data-act="l-prev" ${view.idx === 0 ? 'disabled' : ''} aria-label="Vorheriger Buchstabe">${ICON.prev}</button>
+        <button class="nav-btn" data-act="l-prev" ${view.idx === 0 || view.run ? 'disabled' : ''} aria-label="Vorheriger Buchstabe">${ICON.prev}</button>
         <div class="letter-card">
           <div class="lhead">
             <button class="bigletter ar" data-act="l-say" aria-label="Anhören">${l.ch}</button>
@@ -598,9 +624,9 @@
           </div>
           <div class="lwords">${words}</div>
         </div>
-        <button class="nav-btn" data-act="l-next" ${view.idx === ALPHABET.length - 1 ? 'disabled' : ''} aria-label="Nächster Buchstabe">${ICON.next}</button>
+        <button class="nav-btn" data-act="l-next" ${view.idx === ALPHABET.length - 1 || view.run ? 'disabled' : ''} aria-label="Nächster Buchstabe">${ICON.next}</button>
       </div>
-      <div class="cta-row"><button class="pill sm" data-act="l-trace">Nachspuren</button><button class="pill sm" data-act="alpha">Alle Buchstaben</button></div>`;
+      ${view.run ? '' : '<div class="cta-row"><button class="pill sm" data-act="l-trace">Nachspuren</button><button class="pill sm" data-act="alpha">Alle Buchstaben</button></div>'}`;
   }
 
   /* -- Hören & Finden (Welcher Buchstabe?) -- */
@@ -666,15 +692,15 @@
     el.insertAdjacentHTML('beforeend', tick);
     sayLetter(target);
     later(() => {
-      if (view.i + 1 < view.targets.length) { view.i += 1; view.busy = false; render(); sayLetter(view.targets[view.i]); }
+      if (view.i + 1 < view.targets.length) { view.i += 1; view.busy = false; if (view.fields) view.field = view.fields[view.i]; render(); sayLetter(view.targets[view.i]); }
       else finishGame(view.mistakes, 'alpha', 'alpha');
     }, 1500);
   }
   const renderAGame = () => (view.game === 'aquiz' ? renderAQuiz() : renderASuche());
 
   /* -- Nachspuren: Buchstabe blass, mit dem Finger darüberfahren (keine Prüfung) -- */
-  function startTrace(idx) {
-    go({ name: 'trace', cat: view.cat, idx, strokes: [] });
+  function startTrace(idx, ctx = {}) {
+    go({ name: 'trace', cat: view.cat, idx, strokes: [], ...ctx });
     sayLetter(ALPHABET[idx]);
   }
   function renderTrace() {
@@ -689,10 +715,10 @@
         <g class="ink" fill="none" stroke="#E8836B" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"></g>
       </svg></div>
       <div class="palette"><div class="tools">
-        <button class="chip reset" data-act="t-prev" ${view.idx === 0 ? 'disabled style="opacity:.35"' : ''} aria-label="Vorheriger Buchstabe">${ICON.prev}</button>
+        <button class="chip reset" data-act="t-prev" ${view.run ? 'disabled style="visibility:hidden"' : view.idx === 0 ? 'disabled style="opacity:.35"' : ''} aria-label="Vorheriger Buchstabe">${ICON.prev}</button>
         <button class="chip reset" data-act="t-undo" aria-label="Rückgängig">${ICON.undo}</button>
         <button class="chip reset" data-act="t-clear" aria-label="Löschen">${ICON.trash}</button>
-        <button class="chip reset" data-act="t-next" ${view.idx === ALPHABET.length - 1 ? 'disabled style="opacity:.35"' : ''} aria-label="Nächster Buchstabe">${ICON.next}</button>
+        <button class="chip reset" data-act="t-next" ${view.run ? 'disabled style="visibility:hidden"' : view.idx === ALPHABET.length - 1 ? 'disabled style="opacity:.35"' : ''} aria-label="Nächster Buchstabe">${ICON.next}</button>
       </div></div>`;
   }
   function bindTrace() {
@@ -723,37 +749,224 @@
     ['pointerup', 'pointercancel'].forEach((t) => svg.addEventListener(t, () => { cur = null; }));
   }
 
+  /* ---------- Schulwochen: „Diese Woche" ---------- */
+  const unitInfo = (u) => {
+    const [kind, rest] = u.split(':');
+    if (kind === 'letter' && letterOf(rest)) return { ico: `<span class="ar wl">${letterOf(rest).ch}</span>`, label: 'Buchstabe' };
+    if (kind === 'category' && catById(rest)) { const c = catById(rest); return { ico: Sketch.nav(rest) || c.icon, label: c.de }; }
+    if (kind === 'game') {
+      const [cat, gid] = rest.split('/');
+      const g = catById(cat) && gamesFor(cat).find((x) => x.id === gid);
+      if (g) return { ico: Sketch.get('game/' + gid) || '', label: g.de };
+    }
+    return null;
+  };
+  const unitDone = (lid, u) => !!(lessonsProg[lid] && lessonsProg[lid].units[u]);
+  const weekStars = (L) => {
+    const st = Object.values((lessonsProg[L.id] && lessonsProg[L.id].stars) || {});
+    return st.length ? Math.max(1, Math.round(st.reduce((a, b) => a + b, 0) / st.length)) : 0;
+  };
+
+  // Eine Woche = flache Liste von Schritten; unbekannte Einheiten werden übersprungen.
+  function buildSteps(L) {
+    const steps = [];
+    L.units.forEach((u) => {
+      const [kind, rest] = u.split(':');
+      if (kind === 'letter' && letterOf(rest)) steps.push({ u, k: 'letter', id: rest }, { u, k: 'trace', id: rest }, { u, k: 'suche', id: rest });
+      else if (kind === 'category' && catById(rest)) steps.push({ u, k: 'learn', cat: rest }, { u, k: 'quiz', cat: rest });
+      else if (kind === 'game') {
+        const [cat, gid] = rest.split('/');
+        if (catById(cat) && gamesFor(cat).some((x) => x.id === gid)) steps.push({ u, k: 'game', cat, game: gid });
+      }
+    });
+    return steps;
+  }
+
+  function startRun(lid, fromUnit) {
+    const lesson = lessonById(lid);
+    const steps = buildSteps(lesson);
+    if (!steps.length) return;
+    let i;
+    if (fromUnit) i = Math.max(0, steps.findIndex((x) => x.u === fromUnit));
+    else { const first = steps.find((x) => !unitDone(lid, x.u)); i = first ? steps.indexOf(first) : 0; }
+    run = { lesson, steps, i };
+    runStep();
+  }
+
+  function runStep() {
+    const st = run.steps[run.i];
+    const ctx = { run: true };
+    if (st.k === 'letter') {
+      const idx = ALPHABET.findIndex((l) => l.id === st.id);
+      go({ name: 'letter', cat: view.cat, idx, ...ctx });
+      sayLetter(ALPHABET[idx]);
+    } else if (st.k === 'trace') startTrace(ALPHABET.findIndex((l) => l.id === st.id), ctx);
+    else if (st.k === 'suche') startSSuche(st.id, ctx);
+    else if (st.k === 'learn') {
+      const c = catById(st.cat);
+      go({ name: 'learn', cat: st.cat, idx: 0, ...ctx });
+      speak(c, c.items[0]);
+    } else if (st.k === 'quiz') startQuiz(catById(st.cat), ctx);
+    else if (st.k === 'game') {
+      view.cat = st.cat;
+      ({ suche: startSuche, zaehlen: startZaehlen, geben: startGeben, malen: startMalen, finger: startFinger, sinn: startSinn })[st.game](ctx);
+    }
+  }
+
+  // earned = Sterne des gerade beendeten Ergebnis-Bildschirms (nur dort vorhanden); „Weiter" ohne Ergebnis überspringt.
+  function runNext(earned) {
+    if (!run) return;
+    const L = run.lesson;
+    const st = run.steps[run.i];
+    const nxt = run.steps[run.i + 1];
+    const p = lessonProg(L.id);
+    if (earned) p.stars[st.u] = Math.max(p.stars[st.u] || 0, earned);
+    if (!nxt || nxt.u !== st.u) {
+      if (p.stars[st.u] || st.game === 'malen' || st.game === 'finger') p.units[st.u] = true;
+    }
+    saveProg();
+    run.i += 1;
+    if (!nxt) go({ name: 'weekdone', cat: view.cat, lid: L.id });
+    else runStep();
+  }
+
+  function runBar() {
+    const L = run.lesson;
+    return `<div class="topbar">
+      <button class="round-btn" data-act="r-exit" aria-label="Beenden">✕</button>
+      ${dotsHtml(run.steps.length, run.i)}
+      <span class="cat-name"><span class="ar">${letterOf(L.letter).ch}</span><span class="de">${L.topic ? L.topic.de : 'Buchstabe'}</span></span>
+      <button class="pill sm runnext" data-act="r-next">Weiter ${ICON.next}</button>
+    </div>`;
+  }
+
+  // Such den Buchstaben (Woche): in jeder Runde ein neues Feld, Ablenker aus ähnlicher Gruppe und aus den bisher gelernten Buchstaben
+  function schoolField(target, learned) {
+    const near = shuffle(ALPHABET.filter((l) => l.id !== target.id && (l.group === target.group || (target.group === 'alif' && l.group === 'bt'))));
+    const known = shuffle(learned.filter((l) => l.id !== target.id));
+    const rest = shuffle(ALPHABET.filter((l) => l.id !== target.id));
+    const picked = [target];
+    [...near.slice(0, 3), ...known, ...rest].forEach((l) => { if (picked.length < 9 && !picked.includes(l)) picked.push(l); });
+    const pos = scatter(picked.length);
+    return shuffle(picked).map((l, i) => ({ l, ...pos[i], found: false }));
+  }
+  function startSSuche(letterId, ctx = {}) {
+    const lesson = (run && run.lesson) || LESSONS[0];
+    const here = letterOf(letterId);
+    const learned = LESSONS.slice(LESSONS.indexOf(lesson)).map((x) => letterOf(x.letter));
+    const prev = shuffle(learned.filter((l) => l.id !== here.id));
+    const targets = [here, here, prev[0] || here, here, prev[1] || prev[0] || here];
+    const fields = targets.map((t) => schoolField(t, learned));
+    go({ name: 'agame', game: 'asuche', cat: view.cat, fields, field: fields[0], targets, i: 0, mistakes: 0, busy: false, ...ctx });
+    sayLetter(targets[0]);
+  }
+
+  function renderWeek() {
+    const L = lessonById(view.lid) || LESSONS[0];
+    const l = letterOf(L.letter);
+    const units = L.units.map((u) => ({ u, info: unitInfo(u) })).filter((x) => x.info);
+    const steps = buildSteps(L);
+    const allDone = steps.length && steps.every((x) => unitDone(L.id, x.u));
+    const chips = units.map(({ u, info }) => `<button class="wchip ${unitDone(L.id, u) ? 'done' : ''}" data-act="r-start" data-l="${L.id}" data-u="${u}">
+        <span class="wic">${info.ico}</span><span class="wl2">${info.label}</span>${unitDone(L.id, u) ? tick : ''}</button>`).join('');
+    const past = LESSONS.map((x) => `<button class="wpast ${x.id === L.id ? 'sel' : ''}" data-act="r-open" data-l="${x.id}">
+        <span class="ar">${letterOf(x.letter).ch}</span><i>${x.topic ? x.topic.de : 'Buchstabe'}</i></button>`).join('');
+    const pages = L.bookPages.length ? `Buch Seite ${L.bookPages.join('–')}` : '';
+    return `<div class="topbar"><span></span><span class="cat-name"><span class="ar">مَدْرَسَتِي</span><span class="de">${L === LESSONS[0] ? 'Diese Woche' : 'Frühere Woche'}</span></span></div>
+      <div class="week">
+        <div class="wcard">
+          <button class="wletter ar" data-act="w-say" data-l="${L.id}" aria-label="Buchstabe anhören">${l.ch}</button>
+          <div class="winfo">
+            <div class="wtopic">${L.topic ? `<span class="ar">${L.topic.ar}</span><span>${L.topic.de}</span>` : '<span>Buchstabe der Woche</span>'}</div>
+            <div class="wmeta">${[pages, L.note].filter(Boolean).join(' · ')}</div>
+            <div class="wstars">${starsText(weekStars(L))}</div>
+          </div>
+          <button class="pill wgo" data-act="r-start" data-l="${L.id}">${allDone ? 'Nochmal' : 'Los geht’s'} ${ICON.next}</button>
+        </div>
+        <div class="wunits">${chips}</div>
+        <div class="wpasts">${past}</div>
+      </div>`;
+  }
+  function renderWeekDone() {
+    const L = lessonById(view.lid);
+    return `<div class="topbar"><span></span><span class="cat-name"><span class="ar">مَدْرَسَتِي</span><span class="de">Diese Woche</span></span></div>
+      <div class="result"><div class="result-card">
+        <div class="big-stars">${starsText(weekStars(L) || 1)}</div>
+        <div class="msg ar" style="font-size:9vmin">يَا سَلَام!</div>
+        <div class="msg">Die Woche ist geschafft!</div>
+        <button class="pill" data-act="week">Zur Woche</button>
+      </div></div>`;
+  }
+
   /* ---------- Elternbereich ---------- */
   let recorder = null;
   let recordingKey = null;
 
+  function recRow(c, it, cls = '') {
+    const k = keyOf(c, it);
+    const has = recs.has(k);
+    const live = recordingKey === k;
+    return `<div class="row ${cls}">
+      <span class="ar">${it.ar}</span><span class="de">${it.de}</span>
+      <span class="has">${has ? '✓ eigene' : ''}</span>
+      <button class="mini" data-act="p-play" data-k="${k}" aria-label="Anhören">▶</button>
+      <button class="mini rec ${live ? 'live' : ''}" data-act="p-rec" data-k="${k}" aria-label="Aufnehmen">${live ? '■' : '●'}</button>
+      <button class="mini" data-act="p-del" data-k="${k}" ${has ? '' : 'disabled style="opacity:.3"'} aria-label="Löschen">🗑</button>
+    </div>`;
+  }
+
+  function schoolPanel() {
+    if (!LESSONS.length) return '<p class="hint">Noch keine Schulwochen eingetragen (school.js).</p>';
+    return `<p class="hint">Hausaufgaben der Schule als Checkliste. „Buchstaben üben" hakt sich selbst ab, wenn das Kind die Buchstaben-Station in „Diese Woche" geschafft hat. Neue Wochen kommen oben in <b>school.js</b>.</p>` +
+      LESSONS.map((L) => {
+        const l = letterOf(L.letter);
+        const hws = L.homework.map((h) => {
+          const auto = h.type === 'letter-practice' && unitDone(L.id, 'letter:' + L.letter);
+          const on = auto || !!(lessonsProg[L.id] && lessonsProg[L.id].hw[h.id]);
+          return `<button class="hw ${on ? 'on' : ''}" data-act="p-hw" data-l="${L.id}" data-h="${h.id}" ${auto ? 'disabled' : ''}>
+            <span class="box">${on ? ICON.check : ''}</span><span>${h.de}${auto ? ' (automatisch)' : ''}</span></button>`;
+        }).join('');
+        const talk = L.talk && TALK[L.talk]
+          ? `<div class="cat-title small">Gesprächsfragen</div>` + TALK[L.talk].map((q, n) => recRow(TALK_CAT, TALK_CAT.items.find((x) => x.id === `${L.talk}-${n}`), 'qrow')).join('')
+          : '';
+        const meta = [L.date, L.bookPages.length ? `Buch S. ${L.bookPages.join('–')}` : '', L.note].filter(Boolean).join(' · ');
+        return `<section class="lesson">
+          <div class="lh"><span class="ar lbig">${l.ch}</span>
+            <div><div class="lt">${L.topic ? `<span class="ar">${L.topic.ar}</span> ${L.topic.de}` : 'Thema unbekannt'}</div><div class="lm">${meta}</div></div></div>
+          ${L.hint ? `<p class="hint note">${L.hint}</p>` : ''}
+          <div class="hws">${hws}</div>${talk}
+        </section>`;
+      }).join('');
+  }
+
+  function lettersPanel() {
+    const auto = lessonLetters();
+    return `<p class="hint">Antippen schaltet einen Buchstaben ein oder aus. Die Alphabet-Übungen fragen nur eingeschaltete Buchstaben ab. Buchstaben aus den Schulwochen sind automatisch an (Rand), du kannst sie trotzdem ausschalten.</p>
+      <div class="letter-toggles">${ALPHABET.map((l) => `<button class="ltoggle ${isActive(l.id) ? 'on' : ''} ${auto.includes(l.id) ? 'auto' : ''}" data-act="p-letter" data-id="${l.id}"><span class="ar">${l.ch}</span></button>`).join('')}</div>`;
+  }
+
+  function recordPanel() {
+    return `<p class="hint">Hier kannst du die Wörter mit deiner eigenen Stimme aufnehmen (● starten, ■ beenden). Ohne Aufnahme liest die Sprachausgabe des iPads vor. Aufnahmen bleiben auf diesem Gerät.</p>` +
+      [...CATEGORIES, ALPHA_CAT].map((c) => `
+        <div class="cat-title">${c.icon} ${c.de}</div>
+        ${[...c.items, ...(c.extra || [])].map((it) => recRow(c, it)).join('')}`).join('');
+  }
+
   function renderParent() {
-    const cats = [...CATEGORIES, ALPHA_CAT].map((c) => `
-      <div class="cat-title">${c.icon} ${c.de}</div>
-      ${[...c.items, ...(c.extra || [])].map((it) => {
-        const k = keyOf(c, it);
-        const has = recs.has(k);
-        const live = recordingKey === k;
-        return `<div class="row">
-          <span class="ar">${it.ar}</span><span class="de">${it.de}</span>
-          <span class="has">${has ? '✓ eigene' : ''}</span>
-          <button class="mini" data-act="p-play" data-k="${k}" aria-label="Anhören">▶</button>
-          <button class="mini rec ${live ? 'live' : ''}" data-act="p-rec" data-k="${k}" aria-label="Aufnehmen">${live ? '■' : '●'}</button>
-          <button class="mini" data-act="p-del" data-k="${k}" ${has ? '' : 'disabled style="opacity:.3"'} aria-label="Löschen">🗑</button>
-        </div>`;
-      }).join('')}`).join('');
+    const tab = view.ptab || (LESSONS.length ? 'schule' : 'aufnahmen');
+    const tabs = [['schule', 'Schule'], ['buchstaben', 'Buchstaben'], ['aufnahmen', 'Aufnahmen']]
+      .map(([t, label]) => `<button class="seg-i ${tab === t ? 'on' : ''}" data-act="p-tab" data-t="${t}">${label}</button>`).join('');
+    const panel = { schule: schoolPanel, buchstaben: lettersPanel, aufnahmen: recordPanel }[tab]();
     return `
       <div class="topbar"><button class="round-btn" data-act="learn" aria-label="Schließen">✕</button><strong style="font-size:3.6vmin">Elternbereich</strong><span class="spacer"></span></div>
       <div class="parent">
-        <p class="hint">Hier kannst du die Wörter mit deiner eigenen Stimme aufnehmen (● starten, ■ beenden). Ohne Aufnahme liest die Sprachausgabe des iPads vor. Aufnahmen bleiben auf diesem Gerät.</p>
         <div class="toggle-row">
           <button class="mini text" data-act="p-tr">Lautschrift: ${settings.tr ? 'an' : 'aus'}</button>
           <button class="mini text" data-act="p-reset">Sterne zurücksetzen</button>
+          <button class="mini text" data-act="p-reset-w">Wochen zurücksetzen</button>
         </div>
-        <div class="cat-title">Buchstaben für die Alphabet-Spiele</div>
-        <p class="hint">Antippen schaltet einen Buchstaben ein oder aus. Die Spiele „Hören &amp; Finden" und „Such den Buchstaben" fragen nur eingeschaltete Buchstaben ab, zum Beispiel die, die in der Schule dran waren.</p>
-        <div class="letter-toggles">${ALPHABET.map((l) => `<button class="ltoggle ${settings.letters.includes(l.id) ? 'on' : ''}" data-act="p-letter" data-id="${l.id}"><span class="ar">${l.ch}</span></button>`).join('')}</div>
-        ${cats}
+        <div class="seg ptabs">${tabs}</div>
+        ${panel}
       </div>`;
   }
 
@@ -835,11 +1048,25 @@
       case 't-clear': view.strokes = []; render(); break;
       case 'p-letter': {
         const id = el.dataset.id;
-        const has = settings.letters.includes(id);
-        settings.letters = has ? settings.letters.filter((x) => x !== id) : [...settings.letters, id];
-        if (!settings.letters.length) settings.letters = [id];
+        if (isActive(id)) {
+          settings.letters = settings.letters.filter((x) => x !== id);
+          if (lessonLetters().includes(id)) settings.lettersOff = [...settings.lettersOff, id];
+          if (!ALPHABET.some((l) => isActive(l.id))) { settings.letters = [...settings.letters, id]; settings.lettersOff = settings.lettersOff.filter((x) => x !== id); }
+        } else {
+          settings.letters = [...settings.letters, id];
+          settings.lettersOff = settings.lettersOff.filter((x) => x !== id);
+        }
         store.set('settings', settings); keepScroll(render); break;
       }
+      case 'week': go({ name: 'week', cat: view.cat, lid: view.lid || LESSONS[0].id }); break;
+      case 'r-open': go({ name: 'week', cat: view.cat, lid: el.dataset.l }); break;
+      case 'r-start': startRun(el.dataset.l, el.dataset.u); break;
+      case 'r-next': runNext(view.name === 'result' ? view.earned : undefined); break;
+      case 'r-exit': { const lid = run ? run.lesson.id : view.lid; go({ name: 'week', cat: view.cat, lid }); break; }
+      case 'w-say': sayLetter(letterOf(lessonById(el.dataset.l).letter)); break;
+      case 'p-tab': view.ptab = el.dataset.t; render(); break;
+      case 'p-hw': { const p = lessonProg(el.dataset.l); p.hw[el.dataset.h] = !p.hw[el.dataset.h]; saveProg(); keepScroll(render); break; }
+      case 'p-reset-w': lessonsProg = {}; saveProg(); keepScroll(render); break;
       case 'g-start': ({ suche: startSuche, zaehlen: startZaehlen, geben: startGeben, malen: startMalen, finger: startFinger, sinn: startSinn })[el.dataset.g](); break;
       case 's-pick': sPick(el); break;
       case 's-ask': speak(c, view.targets[view.i]); break;

@@ -391,6 +391,13 @@
   ART['bewegung/schwimmen'] = [...ART['tiere/fisch'], ['l', 'M4 86 Q14 80 24 86 Q34 92 44 86 Q54 80 64 86 Q74 92 84 86 Q90 83 96 86'], ['l', 'M14 96 Q24 90 34 96 Q44 102 54 96']];
   ART['bewegung/springen'] = [...ART['tiere/hase'], ['l', 'M6 86 Q2 60 16 42'], ['l', 'M14 94 Q8 72 22 54']];
   ART['nav/bewegung'] = ART['bewegung/springen'];
+  ART['nav/woche'] = [
+    ['l', 'M34 38 C34 18 66 18 66 38'],
+    ['s', 'M22 38 L78 38 L82 90 L18 90 Z', '#E8836B'],
+    ['s', 'M22 38 C24 26 76 26 78 38 Z', '#D96A50'],
+    ['s', 'M30 62 L70 62 L70 84 L30 84 Z', '#F2C879'], ['d', 50, 74, 2.4],
+    ['l', 'M30 62 L70 62'],
+  ];
 
   /* ---------- Ausmalbilder: je Thema ein Bild, Fläche für Fläche ---------- */
   const W = '#FFFBF2';

@@ -40,7 +40,8 @@
   };
   let done = store.get('done', {});
   let hw = store.get('hw', {});
-  let settings = store.get('settings', { daily: true });
+  const DEFAULTS = { daily: false, free: false, sound: true, slow: true, easy: false };
+  let settings = { ...DEFAULTS, ...store.get('settings2', {}) };
   const today = () => new Date().toLocaleDateString('sv');
   const lessonOf = (id) => KHAIT_LESSONS.find((l) => l.id === id);
   const letterOf = (id) => ALPHABET.find((l) => l.id === id);
@@ -88,7 +89,7 @@
     if (blob) return playBlob(blob);
     if (!('speechSynthesis' in window)) return;
     const u = new SpeechSynthesisUtterance(ar);
-    u.lang = 'ar-SA'; if (arVoice) u.voice = arVoice; u.rate = 0.7;
+    u.lang = 'ar-SA'; if (arVoice) u.voice = arVoice; u.rate = settings.slow ? 0.7 : 0.95;
     speechSynthesis.speak(u);
   }
   const sayLetter = (l) => speak('alphabet/' + l.id, l.name);
@@ -98,6 +99,7 @@
   let ac = null;
   const SCALE = [293.66, 311.13, 369.99, 392, 440, 466.16, 554.37, 587.33];
   function pluck(i, vol = 0.16) {
+    if (!settings.sound) return;
     try {
       ac = ac || new (window.AudioContext || window.webkitAudioContext)();
       const t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain();
@@ -174,7 +176,7 @@
     }).join('');
     const ghosts = KHAIT_NEXT.map((ch) => `<div class="tile ghost"><span class="tl ar">${ch}</span></div>`).join('');
     return `<header class="top"><div class="brand"><span class="ar">خَيْط</span><small>Faden für Faden</small></div>
-      <button class="gate" data-gate aria-label="Eltern (gedrückt halten)">${icon('gear')}</button></header>
+      <button class="gate" data-gate aria-label="Eltern (gedrückt halten)">${icon('gear')}<span id="gatehint">Eltern</span></button></header>
       ${border()}<div class="cloth" dir="rtl">${tiles}${ghosts}</div>${border()}`;
   };
 
@@ -184,7 +186,7 @@
     const asleep = settings.daily && grewToday(L);
     const spools = L.threads.map((t, i) => {
       const isDone = !!(done[L.id] && done[L.id][t]);
-      const state = isDone ? 'done' : t === next ? (asleep ? 'asleep' : 'ready') : 'later';
+      const state = isDone ? 'done' : asleep ? (t === next ? 'asleep' : 'later') : (t === next || settings.free) ? 'ready' : 'later';
       return `<button class="spool ${state}" style="--c:${THREAD_COLORS[i]}" data-act="thread" data-t="${t}" data-state="${state}" aria-label="${THREADS[t].de}">
         <span class="reel">${icon(state === 'asleep' ? 'moon' : THREADS[t].icon)}</span>${isDone ? `<span class="tick">${icon('check')}</span>` : ''}</button>`;
     }).join('');
@@ -434,7 +436,7 @@
     };
     const check = () => {
       if (ok) return;
-      const complete = pts.length > 20 ? hits / pts.length >= 0.8 : travelled > size * 0.8;
+      const complete = pts.length > 20 ? hits / pts.length >= (settings.easy ? 0.55 : 0.8) : travelled > size * 0.8;
       if (!complete) return;
       ok = true; praise(); sayLetter(l);
       later(() => { if (view.i + 1 >= view.n) finish(); else { view.i += 1; render(); } }, 1500);
@@ -457,9 +459,16 @@
         ${L.note ? `<p class="note">${L.note}</p>` : ''}${mine ? `<h3>Ihre Stimme</h3><div class="clips">${mine}</div>` : ''}</section>`;
     }).join('');
     return `<div class="parent"><header class="top"><button class="round" data-act="home" aria-label="Schließen">${icon('back')}</button><strong>Für Eltern</strong><span class="sp"></span></header>
-      <section class="pweek idea"><h2>Die Idee</h2><p>Jede Schulwoche ist ein Stickmotiv. Fünf kurze Übungen sind fünf Fäden. Pro Tag wächst ein Motiv nur um einen Faden: lieber fünf Tage je drei Minuten als einmal eine Viertelstunde. Der letzte Faden gehört ihr als Lehrerin.</p>
-      <label class="hw"><input type="checkbox" data-set="daily" ${settings.daily ? 'checked' : ''}><span>Ein neuer Faden pro Tag und Motiv (empfohlen)</span></label>
-      <p><a href="../">Zur bisherigen App</a> · <button class="link" data-act="pa-reset">Fortschritt zurücksetzen</button></p></section>${weeks}</div>`;
+      <section class="pweek idea"><h2>Die Idee</h2><p>Jede Schulwoche ist ein Stickmotiv. Fünf kurze Übungen sind fünf Fäden. Der letzte Faden gehört ihr als Lehrerin.</p></section>
+      <section class="pweek"><h2>Einstellungen</h2>
+      <label class="set"><span><b>Freie Reihenfolge</b><small>Alle Fäden einer Woche sind sofort offen. Aus: ein Faden nach dem anderen.</small></span><input type="checkbox" class="sw" data-set="free" ${settings.free ? 'checked' : ''}></label>
+      <label class="set"><span><b>Ein neuer Faden pro Tag</b><small>Pro Motiv nur ein neuer Faden am Tag, der nächste schläft bis morgen. Verteilt das Üben über die Woche.</small></span><input type="checkbox" class="sw" data-set="daily" ${settings.daily ? 'checked' : ''}></label>
+      <label class="set"><span><b>Langsam sprechen</b><small>Gilt für die Sprachausgabe, nicht für eigene Aufnahmen.</small></span><input type="checkbox" class="sw" data-set="slow" ${settings.slow ? 'checked' : ''}></label>
+      <label class="set"><span><b>Schreiben: großzügig prüfen</b><small>Der Buchstabe gilt schon als nachgespurt, wenn gut die Hälfte abgedeckt ist.</small></span><input type="checkbox" class="sw" data-set="easy" ${settings.easy ? 'checked' : ''}></label>
+      <label class="set"><span><b>Töne beim Sticken</b><small>Gezupfte Töne bei Erfolg und beim Sticken.</small></span><input type="checkbox" class="sw" data-set="sound" ${settings.sound ? 'checked' : ''}></label>
+      <h3>Fortschritt</h3><div class="clips">${KHAIT_LESSONS.map((L) => `<button class="clip plain" data-act="pa-reset1" data-id="${L.id}"><span class="ar">${letterOf(L.letter).ch}</span> zurücksetzen</button>`).join('')}
+      <button class="clip plain" data-act="pa-reset">Alles zurücksetzen</button></div>
+      <p><a href="../">Zur bisherigen App</a></p></section>${weeks}</div>`;
   };
 
   /* ---------- Eingaben ---------- */
@@ -517,18 +526,19 @@
     'l-next': () => { stopRec(); pluck(view.i + 3); if (view.i + 1 >= view.words.length) return finish(); view.i += 1; view.recording = false; render(); sayWord(view.words[view.i]); },
     'pa-talk': (el) => { const q = lessonOf(el.dataset.id).talk[Number(el.dataset.k)]; speak(`khait/talk/${el.dataset.id}/${el.dataset.k}`, q.ar); },
     'pa-voice': (el) => { const b = voices.get(el.dataset.key); if (b) { stopSound(); playBlob(b); } },
-    'pa-reset': () => { if (view.confirm) { done = {}; store.set('done', done); go({ name: 'parent' }); } else { view.confirm = true; $('[data-act="pa-reset"]').textContent = 'Wirklich? Nochmal tippen'; } },
+    'pa-reset1': (el) => { delete done[el.dataset.id]; store.set('done', done); go({ name: 'parent' }); },
+    'pa-reset': () => { if (view.confirm) { done = {}; store.set('done', done); go({ name: 'parent' }); } else { view.confirm = true; $('[data-act="pa-reset"]').textContent = 'Wirklich alles? Nochmal tippen'; } },
   };
   app.addEventListener('click', (e) => { const el = e.target.closest('[data-act]'); if (el && ACT[el.dataset.act]) ACT[el.dataset.act](el); });
   app.addEventListener('change', (e) => {
     const t = e.target;
     if (t.dataset.hw) { hw[t.dataset.hw] = t.checked; store.set('hw', hw); }
-    if (t.dataset.set) { settings[t.dataset.set] = t.checked; store.set('settings', settings); }
+    if (t.dataset.set) { settings[t.dataset.set] = t.checked; store.set('settings2', settings); }
   });
-  // Eltern-Zugang: Zahnrad 1,5 Sekunden halten
+  // Eltern-Zugang: Zahnrad 1 Sekunde halten
   let gateTimer = null;
-  app.addEventListener('pointerdown', (e) => { const g = e.target.closest('[data-gate]'); if (!g) return; g.classList.add('hold'); gateTimer = setTimeout(() => go({ name: 'parent' }), 1500); });
-  const gateOff = () => { clearTimeout(gateTimer); const g = $('[data-gate]'); if (g) g.classList.remove('hold'); };
+  app.addEventListener('pointerdown', (e) => { const g = e.target.closest('[data-gate]'); if (!g) return; g.classList.add('hold'); const h = $('#gatehint'); if (h) h.textContent = 'gedrückt halten …'; gateTimer = setTimeout(() => go({ name: 'parent' }), 1000); });
+  const gateOff = () => { clearTimeout(gateTimer); const g = $('[data-gate]'); if (g) g.classList.remove('hold'); const h = $('#gatehint'); if (h && h.textContent !== 'Eltern') setTimeout(() => { const x = $('#gatehint'); if (x) x.textContent = 'Eltern'; }, 1400); };
   app.addEventListener('pointerup', gateOff); app.addEventListener('pointerleave', gateOff); app.addEventListener('pointercancel', gateOff);
   document.addEventListener('contextmenu', (e) => e.preventDefault());
 

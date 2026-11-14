@@ -26,8 +26,11 @@ button { font: inherit; color: inherit; border: 0; background: none; padding: 0;
 .round { width: 11vmin; height: 11vmin; border-radius: 50%; background: var(--paper); box-shadow: 0 .5vmin 0 var(--linen2); display: grid; place-items: center; font-size: 5.4vmin; }
 .round.big { width: 15vmin; height: 15vmin; font-size: 7vmin; }
 .round:active, .pill:active, .opt:active, .wcard:active, .spool:active, .tile:active { transform: translateY(.4vmin) scale(.98); }
-.gate { width: 9vmin; height: 9vmin; font-size: 4.6vmin; color: #C9BBA3; display: grid; place-items: center; border-radius: 50%; transition: color 1.5s, transform 1.5s; }
-.gate.hold { color: var(--red); transform: rotate(180deg); }
+.gate { height: 9vmin; padding: 0 3vmin; font-size: 4.4vmin; color: #9C8E76; display: flex; align-items: center; gap: 1.6vmin; border-radius: 5vmin; background: var(--paper); box-shadow: 0 .5vmin 0 var(--linen2); transition: color 1s; }
+.gate span { font-size: 2.6vmin; white-space: nowrap; }
+.gate .ic { transition: transform 1s; }
+.gate.hold { color: var(--red); }
+.gate.hold .ic { transform: rotate(180deg); }
 
 /* Tatreez-Borte */
 .border { height: 3.2vmin; margin: 1.5vmin 0; opacity: .9;
@@ -191,3 +194,10 @@ button { font: inherit; color: inherit; border: 0; background: none; padding: 0;
 .link, .parent a { color: var(--teal); text-decoration: underline; }
 
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01s !important; animation-iteration-count: 1 !important; } .motif .fresh { opacity: 1; } }
+
+.set { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 10px 0; border-top: 1px solid var(--linen2); }
+.set b { display: block; font-weight: 600; } .set small { color: var(--muted); font-size: 13px; line-height: 1.4; display: block; }
+.sw { appearance: none; -webkit-appearance: none; flex: none; width: 52px; height: 30px; border-radius: 15px; background: var(--linen2); position: relative; transition: background .2s; cursor: pointer; }
+.sw::after { content: ""; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, .25); transition: transform .2s; }
+.sw:checked { background: var(--olive); } .sw:checked::after { transform: translateX(22px); }
+.clip.plain { background: var(--linen); color: var(--ink); } .clip.plain .ar { color: var(--red); font-size: 20px; line-height: 1; }

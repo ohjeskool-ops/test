@@ -1,6 +1,6 @@
 # Arabisch lernen – für Kinder
 
-Ruhige Lern-App (Web-App/PWA) für iPad und Tablets, palästinensischer Dialekt. Kategorien: Farben, Zahlen, Tiere, Essen, Gefühle (weibliche Formen), Sinne, Bewegung (Sätze aus dem Arbeitsheft).
+Ruhige Lern-App (Web-App/PWA) für iPad und Tablets, palästinensischer Dialekt. Kategorien: Farben, Zahlen, Tiere, Essen, Gefühle (weibliche Formen), Sinne, Bewegung (Tier-Sätze und Ich-Verben aus dem Arbeitsheft), Gegensätze (Paare: groß/klein, lang/kurz, neu/alt).
 
 ## Diese Woche (Start)
 Die App startet auf „Diese Woche": der Buchstabe und das Thema der aktuellen Schulwoche, mit einem Tipp spielbar. Eine Woche ist eine Abfolge von Stationen (`units` in `school.js`):
@@ -20,7 +20,8 @@ Unbekannte Einheiten werden übersprungen. Fortschritt und Wochen-Sterne bleiben
   - *Zähl mit!* – Dinge der Kategorie antippen, die App zählt auf Arabisch mit (1–10).
   - *Ausmalen* – Bild zum Thema, Farbe antippen (arabischer Farbname wird gesprochen), dann Flächen antippen.
   - *Finger-Malen* – dasselbe Bild, frei mit dem Finger malen; die Farbe bleibt in der Fläche, in der der Strich beginnt. Pinselgröße, Rückgängig und Löschen.
-  - *Extra* nur wo es passt: *Gib mir …* (Zahlen: arabische Zahl hören, genau so viele Dinge antippen) und *Welcher Sinn?* (Sinne: Ding dem Körperteil zuordnen).
+  - *Extra* nur wo es passt: *Gib mir …* (Zahlen: arabische Zahl hören, genau so viele Dinge antippen), *Welcher Sinn?* (Sinne: Ding dem Körperteil zuordnen) und *Was ist anders?* (Gegensätze: ein Bild + Wort, das Gegenteil finden).
+  - Bei den *Gegensätzen* gibt es nur *Such mich!* und *Was ist anders?* (Zählen und Ausmalen passen nicht zu Paaren); Lernen zeigt beide Seiten eines Paares nebeneinander, Finden fragt „Wo ist das große?".
 - **Alphabet**: die 28 Buchstaben von rechts nach links. Antippen zeigt die Buchstabenkarte (Name, Laut, Formen allein/Anfang/Mitte/Ende, Beispielwörter mit Zeichnung, erster Buchstabe farbig). Üben: *Hören & Finden* (Name hören, Buchstabe wählen), *Such den Buchstaben* (Feld voller Buchstaben) und *Nachspuren* (Buchstabe blass, mit dem Finger darüberfahren, ohne Prüfung).
 - **Elternbereich** (Zahnrad unten in der Seitenleiste, 2 Sekunden halten), Bereiche *Schule* (Hausaufgaben-Checkliste, Gesprächsfragen mit Vorlesen/Aufnahme), *Buchstaben* (welche Buchstaben die Übungen abfragen) und *Aufnahmen*: Wörter und Buchstabennamen mit eigener Stimme aufnehmen, Lautschrift ein/aus, einstellen, welche Buchstaben die Alphabet-Spiele abfragen (z. B. die aus der Schule), Sterne zurücksetzen.
 

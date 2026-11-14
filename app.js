@@ -113,6 +113,8 @@
     } else if (cat.type === 'number') {
       inner = `<div class="numvis"><div class="big"><span>${item.n}</span><span class="ar">${item.digit}</span></div>` +
         `<div class="pips">${'<i class="pip"></i>'.repeat(item.n)}</div></div>`;
+    } else if (cat.type === 'pair') {
+      inner = `<div class="pairart" style="--k:${item.scale || 1}">${Sketch.get(item.art) || ''}</div>`;
     } else {
       inner = Sketch.motif(cat.id, item.id) || `<div class="emoji">${item.emoji}</div>`;
     }
@@ -197,6 +199,7 @@
 
   function renderLearn() {
     const c = catById(view.cat);
+    if (c.type === 'pair') return renderLearnPair(c);
     const item = c.items[view.idx];
     const last = view.idx === c.items.length - 1;
     return `
@@ -205,14 +208,41 @@
         <button class="nav-btn" data-act="prev" ${view.idx === 0 ? 'disabled' : ''} aria-label="Zurück">${ICON.prev}</button>
         <button class="card-main" data-act="say" aria-label="Anhören">
           ${visual(c, item, false)}
+          ${item.part ? `<div class="word-part">${item.part}</div>` : ''}
           <div class="word-ar ar">${item.ar}</div>
           ${settings.tr ? `<div class="word-tr">${item.tr}</div>` : ''}
           <div class="word-de">${item.de}</div>
         </button>
         ${last
           ? (view.run
-            ? `<button class="nav-btn quiz" data-act="r-next" aria-label="Weiter">Weiter ${ICON.next}</button>`
-            : `<button class="nav-btn quiz" data-act="quiz" aria-label="Zum Quiz">Quiz ${ICON.next}</button>`)
+            ? `<button class="nav-btn gobtn" data-act="r-next" aria-label="Weiter">Weiter ${ICON.next}</button>`
+            : `<button class="nav-btn gobtn" data-act="quiz" aria-label="Zum Quiz">Quiz ${ICON.next}</button>`)
+          : `<button class="nav-btn" data-act="next" aria-label="Weiter">${ICON.next}</button>`}
+      </div>`;
+  }
+
+  // Gegensätze: ein Paar je Karte, beide Seiten einzeln antippbar
+  const pairsOf = (c) => {
+    const map = {};
+    c.items.forEach((it) => { (map[it.pair] = map[it.pair] || { id: it.pair, items: [] }).items.push(it); });
+    return Object.values(map).map((p) => ({ id: p.id, a: p.items[0], b: p.items[1] }));
+  };
+  const learnItem = (c, idx) => c.items[c.type === 'pair' ? idx * 2 : idx];
+  function renderLearnPair(c) {
+    const pairs = pairsOf(c);
+    const p = pairs[view.idx];
+    const last = view.idx === pairs.length - 1;
+    const half = (it) => `<button class="half" data-act="say-item" data-id="${it.id}" aria-label="${it.de}">
+        ${visual(c, it, false)}<div class="word-ar ar">${it.ar}</div>${settings.tr ? `<div class="word-tr">${it.tr}</div>` : ''}<div class="word-de">${it.de}</div></button>`;
+    return `
+      ${topbar(c, dotsHtml(pairs.length, view.idx))}
+      <div class="learn">
+        <button class="nav-btn" data-act="prev" ${view.idx === 0 ? 'disabled' : ''} aria-label="Zurück">${ICON.prev}</button>
+        <div class="pair">${half(p.a)}${half(p.b)}</div>
+        ${last
+          ? (view.run
+            ? `<button class="nav-btn gobtn" data-act="r-next" aria-label="Weiter">Weiter ${ICON.next}</button>`
+            : `<button class="nav-btn gobtn" data-act="quiz" aria-label="Zum Quiz">Quiz ${ICON.next}</button>`)
           : `<button class="nav-btn" data-act="next" aria-label="Weiter">${ICON.next}</button>`}
       </div>`;
   }
@@ -221,7 +251,7 @@
     const targets = shuffle(c.items).slice(0, ROUNDS);
     const rounds = targets.map((t) => ({
       target: t,
-      options: shuffle([t, ...shuffle(c.items.filter((x) => x.id !== t.id)).slice(0, 2)]),
+      options: c.type === 'pair' ? shuffle(c.items.filter((x) => x.pair === t.pair)) : shuffle([t, ...shuffle(c.items.filter((x) => x.id !== t.id)).slice(0, 2)]),
       mistake: false,
     }));
     go({ name: 'quiz', cat: c.id, rounds, i: 0, busy: false, ...ctx });
@@ -292,8 +322,9 @@
     { id: 'malen', de: 'Ausmalen' },
     { id: 'finger', de: 'Finger-Malen' },
   ];
-  const EXTRA_GAMES = { zahlen: { id: 'geben', de: 'Gib mir …' }, sinne: { id: 'sinn', de: 'Welcher Sinn?' } };
-  const gamesFor = (cid) => (EXTRA_GAMES[cid] ? [...BASE_GAMES, EXTRA_GAMES[cid]] : BASE_GAMES);
+  const EXTRA_GAMES = { zahlen: { id: 'geben', de: 'Gib mir …' }, sinne: { id: 'sinn', de: 'Welcher Sinn?' }, gegensaetze: { id: 'anders', de: 'Was ist anders?' } };
+  // Gegensätze: Zählen und Ausmalen passen nicht zu Paaren, dafür „Was ist anders?"
+  const gamesFor = (cid) => (cid === 'gegensaetze' ? [BASE_GAMES[0], EXTRA_GAMES.gegensaetze] : EXTRA_GAMES[cid] ? [...BASE_GAMES, EXTRA_GAMES[cid]] : BASE_GAMES);
 
   // Dinge zum Zählen: aus der aktuellen Kategorie; bei den Zahlen aus Tieren und Essen
   const objectPool = (cid) => (cid === 'zahlen' ? ['tiere', 'essen'] : [cid]).flatMap((id) => catById(id).items.map((it) => ({ cid: id, it })));
@@ -339,7 +370,7 @@
   }
 
   function renderGame() {
-    return { suche: renderSuche, zaehlen: renderZaehlen, geben: renderGeben, malen: renderMalen, finger: renderMalen, sinn: renderSinn }[view.game]();
+    return { suche: renderSuche, zaehlen: renderZaehlen, geben: renderGeben, malen: renderMalen, finger: renderMalen, sinn: renderSinn, anders: renderAnders }[view.game]();
   }
 
   /* -- Such mich! -- */
@@ -500,6 +531,47 @@
     speak(c, c.items.find((x) => x.id === thing.sense));
     later(() => {
       if (view.i + 1 < view.rounds.length) { view.i += 1; view.busy = false; render(); speak(c, view.rounds[view.i]); }
+      else finishGame(view.mistakes);
+    }, 1800);
+  }
+
+  /* -- Was ist anders? (Extra bei den Gegensätzen): ein Bild + Wort, das Gegenteil finden -- */
+  function startAnders(ctx = {}) {
+    const c = catById('gegensaetze');
+    const rounds = shuffle(c.items).slice(0, 5).map((prompt) => {
+      const answer = c.items.find((x) => x.pair === prompt.pair && x.id !== prompt.id);
+      const others = shuffle(c.items.filter((x) => x.pair !== prompt.pair)).slice(0, 2);
+      return { prompt, answer, options: shuffle([answer, ...others]) };
+    });
+    go({ name: 'game', game: 'anders', cat: 'gegensaetze', rounds, i: 0, mistakes: 0, busy: false, ...ctx });
+    speak(c, rounds[0].prompt);
+  }
+  function renderAnders() {
+    const c = catById('gegensaetze');
+    const r = view.rounds[view.i];
+    const opts = r.options.map((o) => `<button class="opt" data-act="x-pick" data-id="${o.id}" aria-label="${o.de}">${visual(c, o, true)}</button>`).join('');
+    return `${topbar(c, dotsHtml(view.rounds.length, view.i), 'Was ist anders?')}
+      <div class="quiz">
+        <div class="prompt">
+          <button class="speaker sm" data-act="x-ask" aria-label="Nochmal anhören">${ICON.speaker}</button>
+          <div class="thing">${visual(c, r.prompt, true)}<span class="ar">${r.prompt.ar}</span>${trHtml(r.prompt, 'otr')}</div>
+        </div>
+        <div class="options">${opts}</div>
+        <div class="praise" id="praise"></div>
+      </div>`;
+  }
+  function xPick(el) {
+    if (view.busy) return;
+    const c = catById('gegensaetze');
+    const r = view.rounds[view.i];
+    if (el.dataset.id !== r.answer.id) { view.mistakes += 1; el.classList.add('dim'); return; }
+    view.busy = true;
+    el.classList.add('ok');
+    app.querySelectorAll('.opt').forEach((o) => { o.classList.add('locked'); if (o !== el) o.classList.add('dim'); });
+    document.getElementById('praise').innerHTML = STAR;
+    speak(c, r.answer);
+    later(() => {
+      if (view.i + 1 < view.rounds.length) { view.i += 1; view.busy = false; render(); speak(c, view.rounds[view.i].prompt); }
       else finishGame(view.mistakes);
     }, 1800);
   }
@@ -809,7 +881,7 @@
     } else if (st.k === 'quiz') startQuiz(catById(st.cat), ctx);
     else if (st.k === 'game') {
       view.cat = st.cat;
-      ({ suche: startSuche, zaehlen: startZaehlen, geben: startGeben, malen: startMalen, finger: startFinger, sinn: startSinn })[st.game](ctx);
+      ({ suche: startSuche, zaehlen: startZaehlen, geben: startGeben, malen: startMalen, finger: startFinger, sinn: startSinn, anders: startAnders })[st.game](ctx);
     }
   }
 
@@ -1067,7 +1139,7 @@
       case 'p-tab': view.ptab = el.dataset.t; render(); break;
       case 'p-hw': { const p = lessonProg(el.dataset.l); p.hw[el.dataset.h] = !p.hw[el.dataset.h]; saveProg(); keepScroll(render); break; }
       case 'p-reset-w': lessonsProg = {}; saveProg(); keepScroll(render); break;
-      case 'g-start': ({ suche: startSuche, zaehlen: startZaehlen, geben: startGeben, malen: startMalen, finger: startFinger, sinn: startSinn })[el.dataset.g](); break;
+      case 'g-start': ({ suche: startSuche, zaehlen: startZaehlen, geben: startGeben, malen: startMalen, finger: startFinger, sinn: startSinn, anders: startAnders })[el.dataset.g](); break;
       case 's-pick': sPick(el); break;
       case 's-ask': speak(c, view.targets[view.i]); break;
       case 'z-tap': zTap(el); break;
@@ -1077,13 +1149,16 @@
       case 'm-color': mColor(el); break;
       case 'm-fill': mFill(el); break;
       case 'n-pick': nPick(el); break;
+      case 'x-pick': xPick(el); break;
+      case 'x-ask': speak(catById('gegensaetze'), view.rounds[view.i].prompt); break;
       case 'n-ask': speak(catById('sinne'), view.rounds[view.i]); break;
       case 'm-reset': if (view.game === 'finger') view.strokes = []; else view.fills = {}; render(); break;
       case 'f-size': view.size = Number(el.dataset.i); app.querySelectorAll('.size').forEach((x) => x.classList.toggle('sel', x === el)); break;
       case 'f-undo': view.strokes.pop()?.remove(); break;
       case 'learn': go({ name: 'learn', cat: view.cat, idx: 0 }); speak(c, c.items[0]); break;
-      case 'prev': view.idx -= 1; render(); speak(c, c.items[view.idx]); break;
-      case 'next': view.idx += 1; render(); speak(c, c.items[view.idx]); break;
+      case 'prev': view.idx -= 1; render(); speak(c, learnItem(c, view.idx)); break;
+      case 'next': view.idx += 1; render(); speak(c, learnItem(c, view.idx)); break;
+      case 'say-item': speak(c, c.items.find((x) => x.id === el.dataset.id)); break;
       case 'say': speak(c, c.items[view.idx]); break;
       case 'quiz': startQuiz(c); break;
       case 'ask': speak(c, view.rounds[view.i].target); break;

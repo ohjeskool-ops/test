@@ -108,6 +108,24 @@ const CATEGORIES = [
       { id: 'klettern', ar: 'قِرْدٌ يَتَسَلَّقُ', tr: 'qird yatasallaq', de: 'Der Affe klettert', emoji: '🐵' },
       { id: 'schwimmen', ar: 'سَمَكَةٌ تَسْبَحُ', tr: 'samaka tasbah', de: 'Der Fisch schwimmt', emoji: '🐟' },
       { id: 'springen', ar: 'أَرْنَبٌ يَقْفِزُ', tr: 'arnab yaqfiz', de: 'Der Hase springt', emoji: '🐰' },
+      // Aus dem Gedicht „Muskeln und Bewegungen" (Buch Seite 7): Ich-Verben
+      { id: 'gehen', ar: 'أَمْشِي', tr: 'amschi', de: 'Ich gehe', emoji: '🚶', part: 'Ich bewege mich' },
+      { id: 'rennen-ich', ar: 'أَرْكُض', tr: 'arkud', de: 'Ich renne', emoji: '🏃', part: 'Ich bewege mich' },
+      { id: 'springen-ich', ar: 'أَقْفِز', tr: 'aqfiz', de: 'Ich springe', emoji: '🤸', part: 'Ich bewege mich' },
+      { id: 'spielen', ar: 'أَلْعَب', tr: 'al\u02BFab', de: 'Ich spiele', emoji: '⚽', part: 'Ich bewege mich' },
+    ],
+  },
+  {
+    // Buch Seite 16 (أُقَارِن = „ich vergleiche"). Form aus dem Buch (Hocharabisch). Jedes Wort gehört zu einem Paar (pair).
+    // scale = Größe des Bildes (gleicher Ball, groß und klein).
+    id: 'gegensaetze', de: 'Gegensätze', ar: 'أُقَارِن', icon: '⚖️', tint: '#E9E0C8', type: 'pair',
+    items: [
+      { id: 'gross', pair: 'groesse', ar: 'كَبِير', tr: 'kabir', de: 'groß', art: 'gegensatz/ball', scale: 1 },
+      { id: 'klein', pair: 'groesse', ar: 'صَغِير', tr: 'saghir', de: 'klein', art: 'gegensatz/ball', scale: 0.42 },
+      { id: 'lang', pair: 'laenge', ar: 'طَوِيل', tr: 'tawil', de: 'lang', art: 'gegensatz/giraffe', scale: 1 },
+      { id: 'kurz', pair: 'laenge', ar: 'قَصِير', tr: 'qasir', de: 'kurz', art: 'gegensatz/eichhoernchen', scale: 1 },
+      { id: 'neu', pair: 'alter', ar: 'جَدِيد', tr: 'dschadid', de: 'neu', art: 'gegensatz/schuh-neu', scale: 1 },
+      { id: 'alt', pair: 'alter', ar: 'قَدِيم', tr: 'qadim', de: 'alt', art: 'gegensatz/schuh-alt', scale: 1 },
     ],
   },
 ];

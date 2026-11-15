@@ -43,3 +43,4 @@ Ein zweiter, neu gedachter Zugang unter `/khait/`: Jede Schulwoche ist ein Stick
 - Inhalte der Schulwochen: `khait/lessons.js` (Buchstabe, Thema, Hausaufgaben, Gesprächsfragen, Motiv als 13×13-Raster).
 - Nutzt `data.js`, `alphabet.js`, `art.js` und die Eltern-Aufnahmen der bestehenden App mit. Die bestehende App bleibt unverändert.
 - Elternbereich: „Eltern“ oben rechts 1 Sekunde halten. Dort auch die Einstellungen.
+- Vor jedem Faden läuft eine kurze Erklär-Animation (`INTRO` in `khait/khait.js`), abschaltbar im Elternbereich. Ein Tipp auf den Stickrahmen öffnet die Karten der Woche zum freien Blättern.

@@ -2,7 +2,7 @@
    Jedes Motiv ist eine Liste von Zeichen-Befehlen auf einer 100x100-Fläche:
    ['s', pfad, farbe]  Fläche mit Umriss      ['l', pfad]       nur Linie
    ['d', x, y, r]      Punkt (Auge)           ['c', pfad, farbe] nur Farbe (Wangen)
-   ['h', pfad]         heller Glanzstrich     ['t', x, y, größe, text] Schrift        */
+   ['h', pfad]         heller Glanzstrich    ['b', pfad, farbe] Arm/Bein mit Umriss     ['t', x, y, größe, text] Schrift        */
 (() => {
   const INK = '#2B2F3B';
   const ORANGE = '#F4A046', SAND = '#F2C879', CREAM = '#FFF3DC', PINK = '#F4A6B8', BLUE = '#8EC5E8';
@@ -391,6 +391,107 @@
   ART['bewegung/schwimmen'] = [...ART['tiere/fisch'], ['l', 'M4 86 Q14 80 24 86 Q34 92 44 86 Q54 80 64 86 Q74 92 84 86 Q90 83 96 86'], ['l', 'M14 96 Q24 90 34 96 Q44 102 54 96']];
   ART['bewegung/springen'] = [...ART['tiere/hase'], ['l', 'M6 86 Q2 60 16 42'], ['l', 'M14 94 Q8 72 22 54']];
   ART['nav/bewegung'] = ART['bewegung/springen'];
+  /* ---------- Bewegung: „Ich bewege mich" (Kind in Bewegung) ---------- */
+  const HAIR = '#8A5A3A';
+  const kid = (hx, hy) => [
+    ['s', Ci(hx - 13, hy + 2, 4.5), HAIR], ['s', Ci(hx + 13, hy + 2, 4.5), HAIR],
+    ['s', Ci(hx, hy, 12), SKIN],
+    ['s', `M${hx - 13} ${hy} C${hx - 13} ${hy - 15} ${hx + 13} ${hy - 15} ${hx + 13} ${hy} C${hx + 6} ${hy - 7} ${hx - 6} ${hy - 7} ${hx - 13} ${hy} Z`, HAIR],
+    ['d', hx - 4, hy + 1, 1.7], ['d', hx + 4, hy + 1, 1.7], ['l', `M${hx - 3} ${hy + 6} Q${hx} ${hy + 9} ${hx + 3} ${hy + 6}`],
+  ];
+  ART['bewegung/gehen'] = [
+    ['b', 'M44 62 L40 88', SKIN], ['b', 'M56 62 L62 86', SKIN],
+    ['s', 'M32 88 L46 88 L46 95 L32 95 Z', BROWN], ['s', 'M56 86 L70 86 L70 93 L56 93 Z', BROWN],
+    ['s', 'M40 34 L60 34 L67 64 L33 64 Z', PINK],
+    ['b', 'M41 38 L32 54', SKIN], ['b', 'M59 38 L68 50', SKIN],
+    ...kid(50, 20),
+  ];
+  ART['bewegung/rennen-ich'] = [
+    ['l', 'M4 38 L18 38'], ['l', 'M2 52 L14 52'], ['l', 'M6 66 L16 66'],
+    ['b', 'M46 58 L30 70 L18 66', SKIN], ['b', 'M60 60 L76 74 L74 90', SKIN],
+    ['s', 'M10 62 L22 62 L22 71 L10 71 Z', BROWN], ['s', 'M68 88 L82 88 L82 95 L68 95 Z', BROWN],
+    ['s', 'M44 34 L64 38 L66 62 L40 58 Z', PINK],
+    ['b', 'M50 40 L38 50 L32 42', SKIN], ['b', 'M62 42 L78 40 L84 50', SKIN],
+    ...kid(56, 20),
+  ];
+  ART['bewegung/springen-ich'] = [
+    ['l', 'M26 94 L74 94'], ['l', 'M50 86 L50 91'],
+    ['b', 'M44 62 L36 76 L46 80', SKIN], ['b', 'M56 62 L64 76 L54 80', SKIN],
+    ['s', 'M40 40 L60 40 L64 64 L36 64 Z', PINK],
+    ['b', 'M41 44 L28 24', SKIN], ['b', 'M59 44 L72 24', SKIN],
+    ...kid(50, 27),
+  ];
+  ART['bewegung/spielen'] = [
+    ['b', 'M38 62 L36 88', SKIN], ['b', 'M50 62 L52 88', SKIN],
+    ['s', 'M28 88 L42 88 L42 95 L28 95 Z', BROWN], ['s', 'M46 88 L60 88 L60 95 L46 95 Z', BROWN],
+    ['s', 'M34 34 L54 34 L58 64 L30 64 Z', PINK],
+    ['b', 'M35 38 L26 52', SKIN], ['b', 'M53 38 L66 52 L72 58', SKIN],
+    ['s', Ci(76, 66, 10), RED], ['l', 'M67 62 Q76 56 85 62'], ['l', 'M70 74 Q78 70 84 72'],
+    ...kid(44, 20),
+  ];
+  ART['nav/gegensaetze'] = [['s', Ci(36, 56, 26), ORANGE], ['s', Ci(78, 72, 12), ORANGE]];
+  ART['game/anders'] = [['s', Ci(34, 54, 26), ORANGE], ['s', Ci(78, 70, 13), ORANGE], ['t', 74, 32, 30, '?']];
+
+  /* ---------- Gegensätze ---------- */
+  ART['gegensatz/ball'] = [
+    ['s', Ci(50, 50, 34), RED], ['s', 'M17 40 Q50 58 83 40 L85 54 Q50 72 15 54 Z', WHITE], ['h', 'M26 30 Q32 22 42 18'],
+  ];
+  ART['gegensatz/giraffe'] = [
+    ['b', 'M22 86 L22 98', YELLOW], ['b', 'M58 86 L58 98', YELLOW],
+    ['s', E(40, 80, 26, 12), YELLOW],
+    ['s', 'M52 76 L58 22 L70 24 L64 80 Z', YELLOW], ['s', E(68, 17, 13, 8), YELLOW],
+    ['l', 'M64 10 L62 4'], ['l', 'M73 10 L75 4'], ['d', 73, 16, 1.8],
+    ['s', Ci(34, 78, 3.4), BROWN], ['s', Ci(46, 83, 3), BROWN], ['s', Ci(56, 50, 2.8), BROWN], ['s', Ci(60, 36, 2.6), BROWN],
+  ];
+  ART['gegensatz/eichhoernchen'] = [
+    ['s', 'M36 84 C6 80 8 36 36 40 C26 50 28 66 42 74 Z', '#C98B5B'],
+    ['s', E(48, 70, 14, 17), '#C98B5B'], ['s', E(48, 74, 8, 11), CREAM],
+    ['s', poly(40, 34, 38, 22, 46, 30), '#C98B5B'], ['s', poly(60, 34, 62, 22, 54, 30), '#C98B5B'],
+    ['s', Ci(50, 42, 12), '#C98B5B'], ['d', 46, 41, 1.8], ['d', 56, 41, 1.8], ['d', 51, 46, 1.6],
+  ];
+  ART['gegensatz/schuh-neu'] = [
+    ['s', 'M10 78 L90 78 L90 87 L10 87 Z', WHITE],
+    ['s', 'M12 78 L12 52 C28 52 36 40 48 42 C60 44 70 60 90 62 L90 78 Z', BLUE],
+    ['l', 'M38 48 L50 56'], ['l', 'M44 43 L56 53'], ['h', 'M20 60 L20 71'],
+    ['s', poly(78, 26, 80, 32, 86, 32, 81, 36, 83, 42, 78, 38, 73, 42, 75, 36, 70, 32, 76, 32), YELLOW],
+  ];
+  ART['gegensatz/schuh-alt'] = [
+    ['s', 'M10 78 L90 78 L90 87 L10 87 Z', '#6B5B4A'],
+    ['s', 'M12 78 L12 54 C28 54 36 44 48 46 C60 48 70 62 90 64 L90 78 Z', '#B8A58C'],
+    ['s', 'M28 62 L42 62 L42 74 L28 74 Z', '#C98B5B'], ['l', 'M30 64 L30 72 M34 64 L34 72 M38 64 L38 72'],
+    ['s', Ci(70, 70, 4.4), INK], ['l', 'M50 52 Q60 70 52 86'],
+  ];
+
+  /* ---------- weitere Beispielwörter fürs Alphabet (ت, ث) ---------- */
+  ART['wort/krokodil'] = [
+    ['s', 'M30 66 L26 80 L40 80 L40 68 Z', GREEN], ['s', 'M58 68 L56 82 L70 82 L68 70 Z', GREEN],
+    ['s', 'M6 56 C20 44 50 44 74 52 L92 54 C98 56 98 64 90 64 L74 66 C50 74 20 72 6 66 Z', GREEN],
+    ['l', 'M24 48 L28 42 L32 48 M38 46 L42 40 L46 46 M52 47 L56 41 L60 47'],
+    ['s', Ci(80, 51, 4), WHITE], ['d', 81, 51, 1.8], ['l', 'M76 64 L80 59 L84 64 L88 59'],
+  ];
+  ART['wort/krone'] = [
+    ['s', 'M14 72 L14 34 L32 52 L50 24 L68 52 L86 34 L86 72 Z', YELLOW],
+    ['s', 'M14 72 L86 72 L86 84 L14 84 Z', '#E9B44C'],
+    ['s', Ci(14, 34, 4.5), RED], ['s', Ci(50, 24, 4.5), BLUE], ['s', Ci(86, 34, 4.5), RED],
+    ['s', Ci(32, 78, 3), RED], ['s', Ci(50, 78, 3), BLUE], ['s', Ci(68, 78, 3), RED],
+  ];
+  ART['wort/schnee'] = [
+    ['l', 'M50 10 L50 90'], ['l', 'M16 30 L84 70'], ['l', 'M16 70 L84 30'],
+    ['l', 'M41 20 L50 29 L59 20'], ['l', 'M41 80 L50 71 L59 80'],
+    ['l', 'M20 42 L31 40 L28 29'], ['l', 'M80 58 L69 60 L72 71'], ['l', 'M20 58 L31 60 L28 71'], ['l', 'M80 42 L69 40 L72 29'],
+    ['s', Ci(50, 50, 6), '#E6F0FA'],
+  ];
+  ART['wort/knoblauch'] = [
+    ['l', 'M44 88 L42 95'], ['l', 'M50 88 L50 96'], ['l', 'M56 88 L58 95'],
+    ['s', 'M50 18 C58 28 78 34 78 58 C78 78 64 88 50 88 C36 88 22 78 22 58 C22 34 42 28 50 18 Z', CREAM],
+    ['l', 'M50 24 L50 86'], ['l', 'M38 34 C30 50 32 72 42 86'], ['l', 'M62 34 C70 50 68 72 58 86'],
+    ['s', 'M46 22 L48 8 L52 8 L54 22 Z', CREAM],
+  ];
+  ART['wort/drei'] = [
+    ['t', 50, 58, 54, '٣'],
+    ['s', Ci(30, 80, 6.4), ORANGE], ['s', Ci(50, 80, 6.4), ORANGE], ['s', Ci(70, 80, 6.4), ORANGE],
+  ];
+
   ART['nav/woche'] = [
     ['l', 'M34 38 C34 18 66 18 66 38'],
     ['s', 'M22 38 L78 38 L82 90 L18 90 Z', '#E8836B'],
@@ -495,6 +596,7 @@
         case 's': out += `<path d="${op[1]}" fill="${op[2]}" stroke="none" transform="translate(2.4 2)"/><path d="${op[1]}" fill="none"/>`; break;
         case 'l': out += `<path d="${op[1]}" fill="none"/>`; break;
         case 'c': out += `<path d="${op[1]}" fill="${op[2]}" stroke="none"/>`; break;
+        case 'b': out += `<path d="${op[1]}" fill="none" stroke="${INK}" stroke-width="7.4" stroke-linecap="round" stroke-linejoin="round"/><path d="${op[1]}" fill="none" stroke="${op[2]}" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>`; break;
         case 'h': out += `<path d="${op[1]}" fill="none" stroke="#FFFFFF" stroke-width="3" opacity=".8"/>`; break;
         case 'd': out += `<circle cx="${op[1]}" cy="${op[2]}" r="${op[3]}" fill="${INK}" stroke="none"/>`; break;
         case 't': out += `<text x="${op[1]}" y="${op[2]}" font-size="${op[3]}" font-weight="700" text-anchor="middle" fill="${INK}" stroke="none" font-family="ui-rounded,'SF Pro Rounded',-apple-system,'Helvetica Neue',Arial,sans-serif">${op[4]}</text>`; break;
@@ -545,12 +647,12 @@
   }
 
   /* Finger-Bild: pro Fläche eine zugeschnittene Malschicht, Linien liegen darüber */
-  function paintScene(catId) {
+  function paintScene(catId, fills = {}) {
     const S = sceneOf(catId);
     const pid = 'p' + uid++;
     const defs = S.regions.map(([id, d]) => `<clipPath id="${pid}-${id}"><path d="${d}"/></clipPath>`).join('');
     const layers = S.regions.map(([id, d, def]) =>
-      `<path class="region" data-r="${id}" d="${d}" fill="${def}"/><g class="paint" data-r="${id}" clip-path="url(#${pid}-${id})"></g>`).join('');
+      `<path class="region" data-r="${id}" d="${d}" fill="${fills[id] || def}"/><g class="paint" data-r="${id}" clip-path="url(#${pid}-${id})"></g>`).join('');
     const lines = S.regions.map(([, d]) => `<path d="${d}" fill="none"/>`).join('');
     return `<svg class="scene paint" ${FRAME} aria-label="Ausmalbild zum Malen mit dem Finger"><defs>${defs}</defs>${layers}` +
       `<g filter="url(#sketch)" stroke="${INK}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" pointer-events="none">${lines}` +
@@ -561,6 +663,7 @@
     get: (key) => (ART[key] ? render(ART[key]) : null),
     scene,
     paintScene,
+    regions: (catId) => sceneOf(catId).regions.map((r) => r[0]),
     color: colorSketch,
     motif: (catId, itemId) => (ART[`${catId}/${itemId}`] ? render(ART[`${catId}/${itemId}`]) : null),
     nav: (catId) => (ART[`nav/${catId}`] ? render(ART[`nav/${catId}`]) : null),

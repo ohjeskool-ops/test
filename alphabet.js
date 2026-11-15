@@ -13,8 +13,8 @@ const ALPHABET = (() => {
   return [
     L('alif', 'ا', 'أَلِف', 'alif', 'a', false, 'alif', [pick('tiere', 'hase'), pick('tiere', 'loewe'), pick('sinne', 'ohr')]),
     L('ba', 'ب', 'بَاء', 'ba', 'b', true, 'bt', [nw('بَبَّغَاء', 'babbagha’', 'Papagei', 'papagei'), pick('tiere', 'ente'), pick('tiere', 'kuh'), pick('essen', 'ei'), nw('بَيْت', 'bait', 'Haus', 'haus')]),
-    L('ta', 'ت', 'تَاء', 'ta', 't', true, 'bt', [pick('essen', 'apfel'), pick('sinne', 'fernseher', 'dinge/fernseher'), pick('gefuehle', 'muede')]),
-    L('tha', 'ث', 'ثَاء', 'tha', 'th (wie englisch „think")', true, 'bt', [nw('ثَعْلَب', 'thaʿlab', 'Fuchs', 'fuchs')]),
+    L('ta', 'ت', 'تَاء', 'ta', 't', true, 'bt', [pick('essen', 'apfel'), pick('sinne', 'fernseher', 'dinge/fernseher'), pick('gefuehle', 'muede'), nw('تِمْسَاح', 'timsah', 'Krokodil', 'krokodil'), nw('تَاج', 'tadsch', 'Krone', 'krone')]),
+    L('tha', 'ث', 'ثَاء', 'tha', 'th (wie englisch „think")', true, 'bt', [nw('ثَعْلَب', 'thaʿlab', 'Fuchs', 'fuchs'), nw('ثَلْج', 'thaldsch', 'Schnee', 'schnee'), nw('ثُوم', 'thum', 'Knoblauch', 'knoblauch'), nw('ثَلَاثَة', 'thalatha', 'drei', 'drei')]),
     L('dschim', 'ج', 'جِيم', 'dschim', 'dsch', true, 'jh', [pick('essen', 'karotte'), pick('essen', 'kaese')]),
     L('ha', 'ح', 'حَاء', 'ha', 'h (tief, gehaucht)', true, 'jh', [pick('tiere', 'pferd'), pick('essen', 'milch'), pick('gefuehle', 'traurig')]),
     L('cha', 'خ', 'خَاء', 'cha', 'ch (wie in „Bach")', true, 'jh', [pick('tiere', 'schaf'), pick('essen', 'brot'), pick('gefuehle', 'aengstlich')]),

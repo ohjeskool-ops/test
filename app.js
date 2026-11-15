@@ -113,6 +113,8 @@
     } else if (cat.type === 'number') {
       inner = `<div class="numvis"><div class="big"><span>${item.n}</span><span class="ar">${item.digit}</span></div>` +
         `<div class="pips">${'<i class="pip"></i>'.repeat(item.n)}</div></div>`;
+    } else if (cat.type === 'pair') {
+      inner = `<div class="pairart" style="--k:${item.scale || 1}">${Sketch.get(item.art) || ''}</div>`;
     } else {
       inner = Sketch.motif(cat.id, item.id) || `<div class="emoji">${item.emoji}</div>`;
     }
@@ -151,9 +153,11 @@
     const c = catById(view.cat);
     document.body.style.setProperty('--tint', c.tint);
     const fn = { learn: renderLearn, quiz: renderQuiz, result: renderResult, parent: renderParent, games: renderGames, game: renderGame, week: renderWeek, weekdone: renderWeekDone, alpha: renderAlpha, letter: renderLetter, agame: renderAGame, trace: renderTrace }[view.name];
-    app.innerHTML = renderNav() + `<div class="content screen">${fn()}</div>`;
+    const fs = view.name === 'game' && view.game === 'malen';
+    app.classList.toggle('fs', fs);
+    app.innerHTML = (fs ? '' : renderNav()) + `<div class="content screen">${fn()}</div>`;
     bindGate();
-    if (view.name === 'game' && view.game === 'finger') bindPaint();
+    if (view.name === 'game' && view.game === 'malen') afterMalen();
     if (view.name === 'trace') bindTrace();
   }
 
@@ -197,6 +201,7 @@
 
   function renderLearn() {
     const c = catById(view.cat);
+    if (c.type === 'pair') return renderLearnPair(c);
     const item = c.items[view.idx];
     const last = view.idx === c.items.length - 1;
     return `
@@ -205,14 +210,41 @@
         <button class="nav-btn" data-act="prev" ${view.idx === 0 ? 'disabled' : ''} aria-label="Zurück">${ICON.prev}</button>
         <button class="card-main" data-act="say" aria-label="Anhören">
           ${visual(c, item, false)}
+          ${item.part ? `<div class="word-part">${item.part}</div>` : ''}
           <div class="word-ar ar">${item.ar}</div>
           ${settings.tr ? `<div class="word-tr">${item.tr}</div>` : ''}
           <div class="word-de">${item.de}</div>
         </button>
         ${last
           ? (view.run
-            ? `<button class="nav-btn quiz" data-act="r-next" aria-label="Weiter">Weiter ${ICON.next}</button>`
-            : `<button class="nav-btn quiz" data-act="quiz" aria-label="Zum Quiz">Quiz ${ICON.next}</button>`)
+            ? `<button class="nav-btn gobtn" data-act="r-next" aria-label="Weiter">Weiter ${ICON.next}</button>`
+            : `<button class="nav-btn gobtn" data-act="quiz" aria-label="Zum Quiz">Quiz ${ICON.next}</button>`)
+          : `<button class="nav-btn" data-act="next" aria-label="Weiter">${ICON.next}</button>`}
+      </div>`;
+  }
+
+  // Gegensätze: ein Paar je Karte, beide Seiten einzeln antippbar
+  const pairsOf = (c) => {
+    const map = {};
+    c.items.forEach((it) => { (map[it.pair] = map[it.pair] || { id: it.pair, items: [] }).items.push(it); });
+    return Object.values(map).map((p) => ({ id: p.id, a: p.items[0], b: p.items[1] }));
+  };
+  const learnItem = (c, idx) => c.items[c.type === 'pair' ? idx * 2 : idx];
+  function renderLearnPair(c) {
+    const pairs = pairsOf(c);
+    const p = pairs[view.idx];
+    const last = view.idx === pairs.length - 1;
+    const half = (it) => `<button class="half" data-act="say-item" data-id="${it.id}" aria-label="${it.de}">
+        ${visual(c, it, false)}<div class="word-ar ar">${it.ar}</div>${settings.tr ? `<div class="word-tr">${it.tr}</div>` : ''}<div class="word-de">${it.de}</div></button>`;
+    return `
+      ${topbar(c, dotsHtml(pairs.length, view.idx))}
+      <div class="learn">
+        <button class="nav-btn" data-act="prev" ${view.idx === 0 ? 'disabled' : ''} aria-label="Zurück">${ICON.prev}</button>
+        <div class="pair">${half(p.a)}${half(p.b)}</div>
+        ${last
+          ? (view.run
+            ? `<button class="nav-btn gobtn" data-act="r-next" aria-label="Weiter">Weiter ${ICON.next}</button>`
+            : `<button class="nav-btn gobtn" data-act="quiz" aria-label="Zum Quiz">Quiz ${ICON.next}</button>`)
           : `<button class="nav-btn" data-act="next" aria-label="Weiter">${ICON.next}</button>`}
       </div>`;
   }
@@ -221,7 +253,7 @@
     const targets = shuffle(c.items).slice(0, ROUNDS);
     const rounds = targets.map((t) => ({
       target: t,
-      options: shuffle([t, ...shuffle(c.items.filter((x) => x.id !== t.id)).slice(0, 2)]),
+      options: c.type === 'pair' ? shuffle(c.items.filter((x) => x.pair === t.pair)) : shuffle([t, ...shuffle(c.items.filter((x) => x.id !== t.id)).slice(0, 2)]),
       mistake: false,
     }));
     go({ name: 'quiz', cat: c.id, rounds, i: 0, busy: false, ...ctx });
@@ -289,11 +321,11 @@
   const BASE_GAMES = [
     { id: 'suche', de: 'Such mich!' },
     { id: 'zaehlen', de: 'Zähl mit!' },
-    { id: 'malen', de: 'Ausmalen' },
-    { id: 'finger', de: 'Finger-Malen' },
+    { id: 'malen', de: 'Malen' },
   ];
-  const EXTRA_GAMES = { zahlen: { id: 'geben', de: 'Gib mir …' }, sinne: { id: 'sinn', de: 'Welcher Sinn?' } };
-  const gamesFor = (cid) => (EXTRA_GAMES[cid] ? [...BASE_GAMES, EXTRA_GAMES[cid]] : BASE_GAMES);
+  const EXTRA_GAMES = { zahlen: { id: 'geben', de: 'Gib mir …' }, sinne: { id: 'sinn', de: 'Welcher Sinn?' }, gegensaetze: { id: 'anders', de: 'Was ist anders?' } };
+  // Gegensätze: Zählen und Ausmalen passen nicht zu Paaren, dafür „Was ist anders?"
+  const gamesFor = (cid) => (cid === 'gegensaetze' ? [BASE_GAMES[0], EXTRA_GAMES.gegensaetze] : EXTRA_GAMES[cid] ? [...BASE_GAMES, EXTRA_GAMES[cid]] : BASE_GAMES);
 
   // Dinge zum Zählen: aus der aktuellen Kategorie; bei den Zahlen aus Tieren und Essen
   const objectPool = (cid) => (cid === 'zahlen' ? ['tiere', 'essen'] : [cid]).flatMap((id) => catById(id).items.map((it) => ({ cid: id, it })));
@@ -339,7 +371,7 @@
   }
 
   function renderGame() {
-    return { suche: renderSuche, zaehlen: renderZaehlen, geben: renderGeben, malen: renderMalen, finger: renderMalen, sinn: renderSinn }[view.game]();
+    return { suche: renderSuche, zaehlen: renderZaehlen, geben: renderGeben, malen: renderMalen, sinn: renderSinn, anders: renderAnders }[view.game]();
   }
 
   /* -- Such mich! -- */
@@ -504,42 +536,136 @@
     }, 1800);
   }
 
-  /* -- Ausmalen (Antippen) und Finger-Malen: gleiche Bilder, die Palette sind die Farben-Vokabeln -- */
+  /* -- Was ist anders? (Extra bei den Gegensätzen): ein Bild + Wort, das Gegenteil finden -- */
+  function startAnders(ctx = {}) {
+    const c = catById('gegensaetze');
+    const rounds = shuffle(c.items).slice(0, 5).map((prompt) => {
+      const answer = c.items.find((x) => x.pair === prompt.pair && x.id !== prompt.id);
+      const others = shuffle(c.items.filter((x) => x.pair !== prompt.pair)).slice(0, 2);
+      return { prompt, answer, options: shuffle([answer, ...others]) };
+    });
+    go({ name: 'game', game: 'anders', cat: 'gegensaetze', rounds, i: 0, mistakes: 0, busy: false, ...ctx });
+    speak(c, rounds[0].prompt);
+  }
+  function renderAnders() {
+    const c = catById('gegensaetze');
+    const r = view.rounds[view.i];
+    const opts = r.options.map((o) => `<button class="opt" data-act="x-pick" data-id="${o.id}" aria-label="${o.de}">${visual(c, o, true)}</button>`).join('');
+    return `${topbar(c, dotsHtml(view.rounds.length, view.i), 'Was ist anders?')}
+      <div class="quiz">
+        <div class="prompt">
+          <button class="speaker sm" data-act="x-ask" aria-label="Nochmal anhören">${ICON.speaker}</button>
+          <div class="thing">${visual(c, r.prompt, true)}<span class="ar">${r.prompt.ar}</span>${trHtml(r.prompt, 'otr')}</div>
+        </div>
+        <div class="options">${opts}</div>
+        <div class="praise" id="praise"></div>
+      </div>`;
+  }
+  function xPick(el) {
+    if (view.busy) return;
+    const c = catById('gegensaetze');
+    const r = view.rounds[view.i];
+    if (el.dataset.id !== r.answer.id) { view.mistakes += 1; el.classList.add('dim'); return; }
+    view.busy = true;
+    el.classList.add('ok');
+    app.querySelectorAll('.opt').forEach((o) => { o.classList.add('locked'); if (o !== el) o.classList.add('dim'); });
+    document.getElementById('praise').innerHTML = STAR;
+    speak(c, r.answer);
+    later(() => {
+      if (view.i + 1 < view.rounds.length) { view.i += 1; view.busy = false; render(); speak(c, view.rounds[view.i].prompt); }
+      else finishGame(view.mistakes);
+    }, 1800);
+  }
+
+  /* -- Malen: ein Spiel, zwei Phasen, Vollbild. Palette = die Farben-Vokabeln -- */
+  // Phase „Auftrag": eine Fläche blinkt, die Farbe wird auf Arabisch gesagt, Farbe antippen, Fläche antippen.
+  // Phase „Frei": mit dem Finger malen, der Strich bleibt in der Fläche, in der er beginnt.
   const colors = () => catById('farben');
   const colorHex = (id) => colors().items.find((x) => x.id === id).color;
+  const colorItem = (id) => colors().items.find((x) => x.id === id);
   const BRUSH = [3.2, 6.5, 11];
+  const TASKS = 5;
   const NS = 'http://www.w3.org/2000/svg';
 
-  function startMalen(ctx = {}) { go({ name: 'game', game: 'malen', cat: view.cat, color: colors().items[0].id, fills: {}, ...ctx }); }
-  function startFinger(ctx = {}) { go({ name: 'game', game: 'finger', cat: view.cat, color: colors().items[0].id, size: 1, strokes: [], ...ctx }); }
-
-  function paletteHtml() {
-    const chips = colors().items.map((it) => `<button class="chip ${it.id === view.color ? 'sel' : ''}" data-act="m-color" data-id="${it.id}" style="--c:${it.color}" aria-label="${it.de}"></button>`).join('');
-    if (view.game === 'malen') {
-      return `<div class="palette"><div class="chips">${chips}<button class="chip reset" data-act="m-reset" aria-label="Alles löschen">${ICON.trash}</button></div></div>`;
-    }
-    const sizes = [1.6, 2.6, 3.8].map((d, i) => `<button class="size ${i === view.size ? 'sel' : ''}" data-act="f-size" data-i="${i}" aria-label="Pinselgröße"><i style="--d:${d}vmin"></i></button>`).join('');
-    return `<div class="palette"><div class="chips">${chips}</div>
-      <div class="tools">${sizes}<button class="chip reset" data-act="f-undo" aria-label="Rückgängig">${ICON.undo}</button><button class="chip reset" data-act="m-reset" aria-label="Alles löschen">${ICON.trash}</button></div></div>`;
+  function pickTasks(cat) {
+    const cols = shuffle(colors().items.filter((it) => it.id !== 'weiss'));
+    return shuffle(Sketch.regions(cat)).slice(0, TASKS).map((region, i) => ({ region, color: cols[i % cols.length].id }));
   }
+  function startMalen(ctx = {}) {
+    const tasks = pickTasks(view.cat);
+    go({ name: 'game', game: 'malen', cat: view.cat, phase: 'task', tasks, ti: 0, mistakes: 0, color: null, fills: {}, size: 1, strokes: [], done: false, earned: undefined, ...ctx });
+    speak(colors(), colorItem(tasks[0].color));
+  }
+
+  const promptHtml = () => {
+    const it = colorItem(view.tasks[view.ti].color);
+    return `<button class="speaker xs" data-act="m-say" aria-label="Nochmal anhören">${ICON.speaker}</button>
+      <span class="ar pword">${it.ar}</span>${trHtml(it, 'otr')}${dotsHtml(TASKS, view.ti)}`;
+  };
+
   function renderMalen() {
-    const c = catById(view.cat);
-    const finger = view.game === 'finger';
-    const picture = finger ? Sketch.paintScene(view.cat) : Sketch.scene(view.cat, view.fills);
-    return `${topbar(c, '<span></span>', finger ? 'Finger-Malen' : 'Ausmalen')}
-      <div class="scene-card">${picture}</div>${paletteHtml()}`;
+    const free = view.phase === 'free';
+    const picture = free ? Sketch.paintScene(view.cat, view.fills) : Sketch.scene(view.cat, view.fills);
+    const chips = colors().items.map((it) => `<button class="chip ${it.id === view.color ? 'sel' : ''}" data-act="m-color" data-id="${it.id}" style="--c:${it.color}" aria-label="${it.de}"></button>`).join('');
+    const sizes = [1.6, 2.6, 3.8].map((d, k) => `<button class="size ${k === view.size ? 'sel' : ''}" data-act="f-size" data-i="${k}" aria-label="Pinselgröße"><i style="--d:${d}vmin"></i></button>`).join('');
+    const tools = free ? `<div class="tools">${sizes}<button class="chip reset" data-act="f-undo" aria-label="Rückgängig">${ICON.undo}</button><button class="chip reset" data-act="m-reset" aria-label="Alles löschen">${ICON.trash}</button></div>` : '';
+    const overlay = view.done ? `<div class="overlay"><div class="result-card">
+        <div class="big-stars">${starsText(view.earned)}</div>
+        <div class="msg ar" style="font-size:8vmin">يَا سَلَام!</div>
+        <div class="row2"><button class="pill sm" data-act="m-phase" data-p="free">Frei malen</button><button class="pill sm" data-act="m-done">Weiter</button></div>
+      </div></div>` : '';
+    return `<div class="paintbar">
+        <button class="round-btn" data-act="m-exit" aria-label="Zurück">✕</button>
+        <div class="paintprompt" id="pprompt">${free || view.done ? '<span class="pfree">Malen</span>' : promptHtml()}</div>
+        <div class="seg"><button class="seg-i ${free ? '' : 'on'}" data-act="m-phase" data-p="task">Auftrag</button><button class="seg-i ${free ? 'on' : ''}" data-act="m-phase" data-p="free">Frei</button></div>
+        ${view.run ? `<button class="pill sm runnext" data-act="r-next">Weiter ${ICON.next}</button>` : ''}
+      </div>
+      <div class="paintwrap">
+        <div class="scene-card canvas">${picture}${overlay}</div>
+        <div class="pal"><div class="chips">${chips}</div>${tools}</div>
+      </div>`;
+  }
+  function afterMalen() {
+    if (view.phase === 'free') bindPaint();
+    else if (!view.done) highlightTask();
+  }
+  function highlightTask() {
+    app.querySelectorAll('.region.target').forEach((x) => x.classList.remove('target'));
+    const el = app.querySelector(`.region[data-r="${view.tasks[view.ti].region}"]`);
+    if (el) el.classList.add('target');
+  }
+  function shakeSvg(el) {
+    el.classList.remove('wrong');
+    el.getBoundingClientRect();
+    el.classList.add('wrong');
   }
   function mColor(el) {
     view.color = el.dataset.id;
     app.querySelectorAll('.chip[data-id]').forEach((x) => x.classList.toggle('sel', x === el));
-    speak(colors(), colors().items.find((x) => x.id === view.color));
+    speak(colors(), colorItem(view.color));
   }
-  function mFill(el) {
-    const col = colorHex(view.color);
-    view.fills[el.dataset.r] = col;
-    el.setAttribute('fill', col);
+  function mTap(el) {
+    if (view.phase !== 'task' || view.done) return;
+    const t = view.tasks[view.ti];
+    if (el.dataset.r !== t.region) return;
+    if (view.color !== t.color) { if (view.color) view.mistakes += 1; shakeSvg(el); return; }
+    const hex = colorHex(t.color);
+    view.fills[t.region] = hex;
+    el.setAttribute('fill', hex);
+    el.classList.remove('target');
+    speak(colors(), colorItem(t.color));
+    view.ti += 1;
+    if (view.ti >= TASKS) {
+      view.earned = view.mistakes === 0 ? 3 : view.mistakes <= 2 ? 2 : 1;
+      view.done = true;
+      later(() => { if (view.done) render(); }, 700);
+    } else {
+      document.getElementById('pprompt').innerHTML = promptHtml();
+      highlightTask();
+      speak(colors(), colorItem(view.tasks[view.ti].color));
+    }
   }
-  // Finger-Malen: Der Strich bleibt in der Fläche, in der er begonnen wurde (Zuschnitt per clip-path).
+  // Frei: Der Strich bleibt in der Fläche, in der er begonnen wurde (Zuschnitt per clip-path).
   function bindPaint() {
     const svg = app.querySelector('.scene.paint');
     if (!svg) return;
@@ -574,6 +700,17 @@
       cur.path.setAttribute('d', cur.d);
     });
     ['pointerup', 'pointercancel'].forEach((t) => svg.addEventListener(t, () => { cur = null; }));
+  }
+  function setPhase(p) {
+    if (p === 'free') {
+      view.phase = 'free'; view.done = false; view.strokes = [];
+      if (!view.color) view.color = colors().items[0].id;
+      render();
+    } else {
+      view.phase = 'task'; view.tasks = pickTasks(view.cat); view.ti = 0; view.mistakes = 0; view.fills = {}; view.done = false; view.color = null; view.earned = undefined;
+      render();
+      speak(colors(), colorItem(view.tasks[0].color));
+    }
   }
 
   /* ---------- Alphabet ---------- */
@@ -809,7 +946,7 @@
     } else if (st.k === 'quiz') startQuiz(catById(st.cat), ctx);
     else if (st.k === 'game') {
       view.cat = st.cat;
-      ({ suche: startSuche, zaehlen: startZaehlen, geben: startGeben, malen: startMalen, finger: startFinger, sinn: startSinn })[st.game](ctx);
+      ({ suche: startSuche, zaehlen: startZaehlen, geben: startGeben, malen: startMalen, sinn: startSinn, anders: startAnders })[st.game](ctx);
     }
   }
 
@@ -822,7 +959,7 @@
     const p = lessonProg(L.id);
     if (earned) p.stars[st.u] = Math.max(p.stars[st.u] || 0, earned);
     if (!nxt || nxt.u !== st.u) {
-      if (p.stars[st.u] || st.game === 'malen' || st.game === 'finger') p.units[st.u] = true;
+      if (p.stars[st.u]) p.units[st.u] = true;
     }
     saveProg();
     run.i += 1;
@@ -1007,6 +1144,7 @@
   /* ---------- Eltern-Zugang: 2 Sekunden gedrückt halten ---------- */
   function bindGate() {
     const g = app.querySelector('[data-gate]');
+    if (!g) return;
     let t = null;
     const clear = () => { clearTimeout(t); t = null; };
     g.addEventListener('pointerdown', () => { t = setTimeout(() => go({ name: 'parent', cat: view.cat }), 2000); });
@@ -1061,13 +1199,13 @@
       case 'week': go({ name: 'week', cat: view.cat, lid: view.lid || LESSONS[0].id }); break;
       case 'r-open': go({ name: 'week', cat: view.cat, lid: el.dataset.l }); break;
       case 'r-start': startRun(el.dataset.l, el.dataset.u); break;
-      case 'r-next': runNext(view.name === 'result' ? view.earned : undefined); break;
+      case 'r-next': runNext(view.earned); break;
       case 'r-exit': { const lid = run ? run.lesson.id : view.lid; go({ name: 'week', cat: view.cat, lid }); break; }
       case 'w-say': sayLetter(letterOf(lessonById(el.dataset.l).letter)); break;
       case 'p-tab': view.ptab = el.dataset.t; render(); break;
       case 'p-hw': { const p = lessonProg(el.dataset.l); p.hw[el.dataset.h] = !p.hw[el.dataset.h]; saveProg(); keepScroll(render); break; }
       case 'p-reset-w': lessonsProg = {}; saveProg(); keepScroll(render); break;
-      case 'g-start': ({ suche: startSuche, zaehlen: startZaehlen, geben: startGeben, malen: startMalen, finger: startFinger, sinn: startSinn })[el.dataset.g](); break;
+      case 'g-start': ({ suche: startSuche, zaehlen: startZaehlen, geben: startGeben, malen: startMalen, sinn: startSinn, anders: startAnders })[el.dataset.g](); break;
       case 's-pick': sPick(el); break;
       case 's-ask': speak(c, view.targets[view.i]); break;
       case 'z-tap': zTap(el); break;
@@ -1075,15 +1213,22 @@
       case 'g-done': gDone(); break;
       case 'g-ask': { const z = catById('zahlen'); speak(z, z.items[view.rounds[view.i].n - 1]); break; }
       case 'm-color': mColor(el); break;
-      case 'm-fill': mFill(el); break;
+      case 'm-fill': mTap(el); break;
+      case 'm-say': speak(colors(), colorItem(view.tasks[view.ti].color)); break;
+      case 'm-phase': setPhase(el.dataset.p); break;
+      case 'm-exit': if (run) { const lid = run.lesson.id; go({ name: 'week', cat: view.cat, lid }); } else go({ name: 'games', cat: view.cat }); break;
+      case 'm-done': if (run) runNext(view.earned); else go({ name: 'games', cat: view.cat }); break;
       case 'n-pick': nPick(el); break;
+      case 'x-pick': xPick(el); break;
+      case 'x-ask': speak(catById('gegensaetze'), view.rounds[view.i].prompt); break;
       case 'n-ask': speak(catById('sinne'), view.rounds[view.i]); break;
-      case 'm-reset': if (view.game === 'finger') view.strokes = []; else view.fills = {}; render(); break;
+      case 'm-reset': view.strokes = []; view.fills = {}; render(); break;
       case 'f-size': view.size = Number(el.dataset.i); app.querySelectorAll('.size').forEach((x) => x.classList.toggle('sel', x === el)); break;
       case 'f-undo': view.strokes.pop()?.remove(); break;
       case 'learn': go({ name: 'learn', cat: view.cat, idx: 0 }); speak(c, c.items[0]); break;
-      case 'prev': view.idx -= 1; render(); speak(c, c.items[view.idx]); break;
-      case 'next': view.idx += 1; render(); speak(c, c.items[view.idx]); break;
+      case 'prev': view.idx -= 1; render(); speak(c, learnItem(c, view.idx)); break;
+      case 'next': view.idx += 1; render(); speak(c, learnItem(c, view.idx)); break;
+      case 'say-item': speak(c, c.items.find((x) => x.id === el.dataset.id)); break;
       case 'say': speak(c, c.items[view.idx]); break;
       case 'quiz': startQuiz(c); break;
       case 'ask': speak(c, view.rounds[view.i].target); break;

@@ -44,3 +44,11 @@ Ein zweiter, neu gedachter Zugang unter `/khait/`: Jede Schulwoche ist ein Stick
 - Nutzt `data.js`, `alphabet.js`, `art.js` und die Eltern-Aufnahmen der bestehenden App mit. Die bestehende App bleibt unverändert.
 - Elternbereich: „Eltern“ oben rechts 1 Sekunde halten. Dort auch die Einstellungen.
 - Vor jedem Faden läuft eine kurze Erklär-Animation (`INTRO` in `khait/khait.js`), abschaltbar im Elternbereich. Ein Tipp auf den Stickrahmen öffnet die Karten der Woche zum freien Blättern.
+
+## Arnab – `arnab/`
+Neu aufgebaute Lern-App nach festem Konzept (Briefing v3). Eine Einheit ist ein Buchstabe mit immer denselben vier Schritten: Schauen (Film) → Hören (Anfangslaut) → Schreiben → Malen nach Buchstaben. Fertige Bilder kommen ins Album.
+- **Allein-Modus:** ein großer Knopf führt zum nächsten Schritt, alles gesprochen, kein Text.
+- **Zusammen-Modus:** Knopf „Zusammen" 1 Sekunde halten. Wörter sprechen und aufnehmen, Ideen ohne Bildschirm, Einstellungen.
+- **Themen** der bisherigen App (Farben, Zahlen, Tiere …): Schauen → Hören → Malen.
+- Inhalte: `arnab/content.js` (Ankerwörter, Ausmalbilder, Buchstabe → Farbe).
+- Offline über den gemeinsamen Service Worker (`sw.js`). **Bei jeder Änderung an `arnab/` die Zahl in `CACHE` erhöhen**, sonst kommt das Update nicht auf den Geräten an.

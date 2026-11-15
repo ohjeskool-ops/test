@@ -28,6 +28,7 @@ jobs:
           cp index.html style.css app.js art.js alphabet.js school.js data.js sw.js manifest.webmanifest _site/
           cp -r icons _site/icons
           cp -r khait _site/khait
+          cp -r arnab _site/arnab
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

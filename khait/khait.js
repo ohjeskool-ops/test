@@ -547,7 +547,7 @@
       <label class="set"><span><b>Töne beim Sticken</b><small>Gezupfte Töne bei Erfolg und beim Sticken.</small></span><input type="checkbox" class="sw" data-set="sound" ${settings.sound ? 'checked' : ''}></label>
       <h3>Fortschritt</h3><div class="clips">${KHAIT_LESSONS.map((L) => `<button class="clip plain" data-act="pa-reset1" data-id="${L.id}"><span class="ar">${letterOf(L.letter).ch}</span> zurücksetzen</button>`).join('')}
       <button class="clip plain" data-act="pa-reset">Alles zurücksetzen</button></div>
-      <p><a href="../">Zur bisherigen App</a></p></section>${weeks}</div>`;
+      <p><a href="../">Zur bisherigen App</a> · <button class="link" data-act="pa-reload">Neu laden</button> · <small>Version 4 (mit Erklär-Animationen)</small></p></section>${weeks}</div>`;
   };
 
   /* ---------- Eingaben ---------- */
@@ -612,6 +612,7 @@
     'l-next': () => { stopRec(); pluck(view.i + 3); if (view.i + 1 >= view.words.length) return finish(); view.i += 1; view.recording = false; render(); sayWord(view.words[view.i]); },
     'pa-talk': (el) => { const q = lessonOf(el.dataset.id).talk[Number(el.dataset.k)]; speak(`khait/talk/${el.dataset.id}/${el.dataset.k}`, q.ar); },
     'pa-voice': (el) => { const b = voices.get(el.dataset.key); if (b) { stopSound(); playBlob(b); } },
+    'pa-reload': () => { location.href = location.pathname + '?r=' + Date.now(); },
     'pa-reset1': (el) => { delete done[el.dataset.id]; store.set('done', done); go({ name: 'parent' }); },
     'pa-reset': () => { if (view.confirm) { done = {}; store.set('done', done); go({ name: 'parent' }); } else { view.confirm = true; $('[data-act="pa-reset"]').textContent = 'Wirklich alles? Nochmal tippen'; } },
   };

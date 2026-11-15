@@ -49,7 +49,7 @@ body::after {
 }
 
 /* ---------- Glas ---------- */
-.nav, .card-main, .opt, .seg, .nav-btn, .speaker, .pill, .round-btn, .row, .result-card, .game-card, .field-card, .scene-card, .palette, .numchip, .hint-chip, .total, .acell, .letter-card, .lword, .form, .wcard, .wchip, .wpast, .half {
+.nav, .card-main, .opt, .seg, .nav-btn, .speaker, .pill, .round-btn, .row, .result-card, .game-card, .field-card, .scene-card, .palette, .numchip, .hint-chip, .total, .pal, .speaker.xs, .overlay .result-card, .acell, .letter-card, .lword, .form, .wcard, .wchip, .wpast, .half {
   background: var(--glass); border: var(--edge); box-shadow: var(--lift);
   -webkit-backdrop-filter: blur(26px) saturate(170%); backdrop-filter: blur(26px) saturate(170%);
 }
@@ -170,6 +170,7 @@ body::after {
 
 /* ---------- Spielen ---------- */
 .games-grid { flex: 1; min-height: 0; display: grid; gap: 3vmin; align-content: center; justify-content: center; grid-auto-rows: 36vmin; }
+.games-grid.g3 { grid-template-columns: repeat(3, minmax(0, 32vmin)); }
 .games-grid.g2 { grid-template-columns: repeat(2, minmax(0, 42vmin)); }
 .games-grid.g4 { grid-template-columns: repeat(2, minmax(0, 42vmin)); }
 .games-grid.g5 { grid-template-columns: repeat(3, minmax(0, 32vmin)); }
@@ -337,6 +338,29 @@ body::after {
 .pairart .art { transform: scale(var(--k, 1)); }
 .word-part { font-size: 2.6vmin; font-weight: 600; color: var(--soft); background: rgba(255, 255, 255, .55); border: var(--edge); border-radius: var(--r-sm); padding: .6vmin 2vmin; }
 
+/* ---------- Malen (Vollbild) ---------- */
+.fs { gap: 0; }
+.paintbar { display: flex; align-items: center; gap: 2vmin; min-height: 9.6vmin; margin-bottom: 1.4vmin; }
+.paintprompt { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 2.2vmin; font-size: 3vmin; font-weight: 600; color: var(--soft); }
+.paintprompt .pword { font-size: 6vmin; color: var(--ink); font-weight: 400; line-height: 1.3; }
+.paintprompt .pfree { font-size: 3.4vmin; }
+.speaker.xs { width: 8.6vmin; height: 8.6vmin; font-size: 4.4vmin; }
+.paintwrap { flex: 1; min-height: 0; display: flex; gap: 2vmin; }
+.paintwrap .scene-card { flex: 1; min-width: 0; padding: 1.2vmin; position: relative; }
+.pal { width: 21.4vmin; flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2.2vmin; padding: 2vmin 1.4vmin; border-radius: var(--r-lg); }
+.pal .chips { display: grid; grid-template-columns: repeat(2, 8.4vmin); gap: 1.6vmin; }
+.pal .chip { width: 8.4vmin; height: 8.4vmin; }
+.pal .tools { display: grid; grid-template-columns: repeat(2, 6.8vmin); gap: 1.2vmin; }
+.pal .tools .size, .pal .tools .chip.reset { width: 6.8vmin; height: 6.8vmin; margin: 0; }
+.region.target { stroke: var(--warm); stroke-width: 3.2; animation: ptarget 1.1s ease-in-out infinite; }
+@keyframes ptarget { 50% { stroke-opacity: .2; } }
+.region.wrong { animation: pshake .4s ease; }
+@keyframes pshake { 25% { transform: translateX(-1.6px); } 75% { transform: translateX(1.6px); } }
+.overlay { position: absolute; inset: 0; display: grid; place-items: center; border-radius: var(--r-lg); background: rgba(255, 255, 255, .45); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); animation: fade .3s ease; }
+.overlay .result-card { padding: 4vmin 7vmin; display: flex; flex-direction: column; align-items: center; gap: 2.4vmin; }
+.overlay .big-stars { font-size: 12vmin; display: flex; gap: 1.6vmin; }
+.row2 { display: flex; gap: 2vmin; }
+
 /* ---------- Hochformat ---------- */
 @media (orientation: portrait) {
   #app { gap: 2vmin; }
@@ -355,6 +379,12 @@ body::after {
   .wletter { font-size: 20vmin; }
   .winfo { align-items: center; flex-basis: 100%; }
   .wchip { width: 20vmin; }
+  .paintwrap { flex-direction: column; }
+  .pal { width: auto; flex-direction: row; flex-wrap: wrap; padding: 1.6vmin 2vmin; }
+  .pal .chips { grid-template-columns: repeat(5, 8vmin); gap: 1.2vmin; }
+  .pal .chip { width: 8vmin; height: 8vmin; }
+  .pal .tools { grid-template-columns: repeat(5, 6.8vmin); }
+  .games-grid.g3 { grid-template-columns: repeat(2, minmax(0, 34vmin)); }
   .pair { flex-direction: column; }
   .half .visual { height: 18vmin; }
   .half .art { width: 17vmin; height: 17vmin; }

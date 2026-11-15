@@ -647,12 +647,12 @@
   }
 
   /* Finger-Bild: pro Fläche eine zugeschnittene Malschicht, Linien liegen darüber */
-  function paintScene(catId) {
+  function paintScene(catId, fills = {}) {
     const S = sceneOf(catId);
     const pid = 'p' + uid++;
     const defs = S.regions.map(([id, d]) => `<clipPath id="${pid}-${id}"><path d="${d}"/></clipPath>`).join('');
     const layers = S.regions.map(([id, d, def]) =>
-      `<path class="region" data-r="${id}" d="${d}" fill="${def}"/><g class="paint" data-r="${id}" clip-path="url(#${pid}-${id})"></g>`).join('');
+      `<path class="region" data-r="${id}" d="${d}" fill="${fills[id] || def}"/><g class="paint" data-r="${id}" clip-path="url(#${pid}-${id})"></g>`).join('');
     const lines = S.regions.map(([, d]) => `<path d="${d}" fill="none"/>`).join('');
     return `<svg class="scene paint" ${FRAME} aria-label="Ausmalbild zum Malen mit dem Finger"><defs>${defs}</defs>${layers}` +
       `<g filter="url(#sketch)" stroke="${INK}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" pointer-events="none">${lines}` +
@@ -663,6 +663,7 @@
     get: (key) => (ART[key] ? render(ART[key]) : null),
     scene,
     paintScene,
+    regions: (catId) => sceneOf(catId).regions.map((r) => r[0]),
     color: colorSketch,
     motif: (catId, itemId) => (ART[`${catId}/${itemId}`] ? render(ART[`${catId}/${itemId}`]) : null),
     nav: (catId) => (ART[`nav/${catId}`] ? render(ART[`nav/${catId}`]) : null),

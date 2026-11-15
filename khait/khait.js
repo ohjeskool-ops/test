@@ -29,6 +29,8 @@
     back: P('M20 6L10 16l10 10'), speaker: P('M5 12h5l7-6v20l-7-6H5z') + P('M22 11c2 3 2 7 0 10M26 8c4 5 4 11 0 16'),
     check: P('M5 17l7 7L27 8', 'stroke-width="3.4"'), mic: '<rect x="12" y="4" width="8" height="14" rx="4" fill="currentColor"/>' + P('M7 15c0 5 4 8 9 8s9-3 9-8M16 23v5'),
     moon: '<path d="M22 4a12 12 0 1 0 6 20A13 13 0 0 1 22 4z" fill="currentColor"/>', gear: '<circle cx="16" cy="16" r="4" fill="none" stroke="currentColor" stroke-width="2.4"/>' + P('M16 3v5M16 24v5M3 16h5M24 16h5M7 7l3.5 3.5M21.5 21.5L25 25M25 7l-3.5 3.5M10.5 21.5L7 25'),
+    next: P('M12 6l10 10-10 10'), play: '<path d="M10 5l18 11-18 11z" fill="currentColor"/>', skip: '<path d="M5 6l11 10L5 26zM16 6l11 10-11 10z" fill="currentColor"/>',
+    book: P('M16 8c-3-2-7-3-11-2v18c4-1 8 0 11 2 3-2 7-3 11-2V6c-4-1-8 0-11 2zM16 8v18'),
     star: '<path d="M16 3l3.8 8.2 9 1-6.7 6 1.9 8.8-8-4.6-8 4.6 1.9-8.8-6.7-6 9-1z" fill="currentColor"/>',
   };
   const icon = (n, cls = '') => `<svg class="ic ${cls}" viewBox="0 0 32 32" aria-hidden="true">${ICONS[n]}</svg>`;
@@ -40,7 +42,8 @@
   };
   let done = store.get('done', {});
   let hw = store.get('hw', {});
-  const DEFAULTS = { daily: false, free: false, sound: true, slow: true, easy: false };
+  let seen = store.get('seen', {});
+  const DEFAULTS = { daily: false, free: false, sound: true, slow: true, easy: false, intro: true };
   let settings = { ...DEFAULTS, ...store.get('settings2', {}) };
   const today = () => new Date().toLocaleDateString('sv');
   const lessonOf = (id) => KHAIT_LESSONS.find((l) => l.id === id);
@@ -192,7 +195,7 @@
     }).join('');
     return `<header class="top"><button class="round" data-act="home" aria-label="Zurück zum Tuch">${icon('back')}</button>
       <div class="wtitle"><span class="ar">${hl(L.word.ar)}</span></div><span class="sp"></span></header>
-      <div class="week"><div class="hoop"><button class="hoop-in" data-act="say-letter" aria-label="Anhören">${motif(L, n)}</button><span class="hoop-letter ar">${l.ch}</span></div>
+      <div class="week"><div class="hoop"><button class="hoop-in" data-act="karten" aria-label="Karten der Woche ansehen">${motif(L, n)}</button><button class="hoop-letter ar" data-act="say-letter" aria-label="Buchstabe anhören">${l.ch}</button><button class="hoop-book" data-act="karten" aria-label="Karten der Woche ansehen">${icon('book')}</button></div>
       <div class="spools">${spools}</div></div>
       <p class="hint" id="hint">${asleep && next ? 'Der nächste Faden schläft bis morgen. Fertige Fäden kannst du noch einmal spielen.' : ''}</p>`;
   };
@@ -219,9 +222,17 @@
   function frame(body, n = 0, i = 0) {
     const L = lessonOf(view.id), color = THREAD_COLORS[L.threads.indexOf(view.t)];
     return `<div class="act" style="--c:${color}"><header class="top"><button class="round" data-act="week" aria-label="Schließen">${icon('back')}</button>
-      ${n ? dots(n, i) : '<span></span>'}<span class="chip">${icon(THREADS[view.t].icon)}</span></header>${body}<div class="praise" id="praise"></div></div>`;
+      ${n ? dots(n, i) : '<span></span>'}${view.name !== 'intro' && INTRO[view.t] ? `<button class="chip" data-act="intro-again" aria-label="Erklärung noch einmal ansehen">${icon('play')}</button>` : `<span class="chip">${icon(THREADS[view.t].icon)}</span>`}</header>${body}<div class="praise" id="praise"></div></div>`;
   }
   const praise = () => { const p = $('#praise'); if (p) { p.innerHTML = icon('star'); p.classList.remove('go'); void p.offsetWidth; p.classList.add('go'); } pluck(4); };
+  // Falsch getippt: richtige Antwort zeigen, vorsprechen und die Frage später noch einmal stellen
+  function miss(el, okEl, say) {
+    wrong(el); el.classList.add('dim');
+    const r = view.rounds[view.i];
+    if (!r.missed) { r.missed = true; view.rounds.push({ ...r }); }
+    if (okEl) okEl.classList.add('showok');
+    say();
+  }
   const wrong = (el) => { el.classList.remove('wob'); void el.offsetWidth; el.classList.add('wob'); };
 
   /* ---------- Faden: Hören ---------- */
@@ -447,6 +458,73 @@
     cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
   };
 
+
+  /* ---------- Erklär-Animationen vor jedem Faden ---------- */
+  const BOWL = 'M352 112 C358 186 322 204 230 204 C138 204 102 186 108 112';
+  // Buchstabe, der sich selbst schreibt (ا gerade von oben, ب ت ث: Schale von rechts, dann die Punkte)
+  function glyph(id, write = true) {
+    const sp = SPEC[id];
+    const stroke = id === 'alif' ? 'M215 40 L215 268' : BOWL;
+    const ds = sp ? [...SLOT.up[sp.up], ...SLOT.down[sp.down]].map(([x, y], k) =>
+      `<g transform="translate(${x} ${y})"><rect class="gd" style="animation-delay:${(write ? 1.9 : 0.25) + k * 0.4}s" x="-15" y="-15" width="30" height="30" rx="5" transform="rotate(45)"/></g>`).join('') : '';
+    return `<svg class="glyph ${write ? 'write' : ''}" viewBox="60 0 340 310" aria-hidden="true"><path class="gs" pathLength="1" d="${stroke}"/>${ds}</svg>`;
+  }
+  const wordScene = (w) => ({ html: `<div class="sc-word"><div class="pic popin">${pic(w.art)}</div><span class="ar wipe">${hl(w.ar)}</span></div>`, say: () => sayWord(w), dur: 2600 });
+  const INTRO = {
+    hoeren: (L) => { const l = letterOf(L.letter); return [{ html: glyph(l.id), say: () => sayLetter(l), at: 1500, dur: 3800 }, ...wordsOf(l.id).slice(0, 3).map(wordScene)]; },
+    spuren: (L) => { const l = letterOf(L.letter); const st = { html: glyph(l.id), say: () => sayLetter(l), at: 1500, dur: 3800 }; return [st, { ...st }]; },
+    punkte: (L) => FAMILY.slice(0, FAMILY.indexOf(L.letter) + 1).map((id) => ({ html: `<div class="sc-punkte">${glyph(id, false)}<span class="ar lbl popin late">${letterOf(id).ch}</span></div>`, say: () => sayLetter(letterOf(id)), at: 1300, dur: 3200 })),
+    finden: (L) => { const l = letterOf(L.letter); return [{ html: glyph(l.id), say: () => sayLetter(l), at: 1500, dur: 3600 },
+      { html: `<div class="sc-row ar">${['ب', l.ch, 'ت', l.ch].map((ch) => `<span class="${ch === l.ch ? 'glow' : ''}">${ch}</span>`).join('')}</div>`, say: () => sayLetter(l), dur: 3000 }]; },
+    quiz: (L) => wordsOf(L.letter).slice(0, 3).map(wordScene),
+    sinne: () => sinne().extra.map((x) => { const part = sinne().items.find((i) => i.id === x.sense); return {
+      html: `<div class="sc-sinne"><div class="pic fly">${pic('dinge/' + x.id)}</div><div class="pic wig">${pic('sinne/' + part.id)}</div></div><div class="ar sc-cap">${x.ar}</div>`,
+      say: () => speak('sinne/' + x.id, x.ar), say2: () => speak('sinne/' + part.id, part.ar), dur: 3400 }; }),
+    gegensatz: () => KHAIT_PAIRS.map((p) => ({
+      html: `<div class="sc-geg"><div class="pic ${p.kind} ${p.pick === 'big' ? 'togrow' : 'toshrink'}">${p.kind === 'size' ? pic('tiere/elefant') : pencil(92)}</div><span class="ar lbl">${p.ar}</span></div>`,
+      say: () => speak('khait/' + p.id, p.ar), at: 900, dur: 3000 })),
+  };
+  function startThread(L, t) {
+    const steps = settings.intro && INTRO[t] ? INTRO[t](L) : [];
+    if (!steps.length) return START[t](L);
+    go({ name: 'intro', id: L.id, t, steps, i: 0 });
+  }
+  const introDone = () => `<button class="pill play" data-act="i-go" aria-label="Jetzt bist du dran">${icon('play')}</button>`;
+  RENDER.intro = () => frame(`<button class="stage" data-act="i-say" aria-label="Noch einmal anhören">${view.steps[view.i].html}</button>
+    <div class="cta" id="icta">${seen[`${view.id}/${view.t}`] ? `<button class="round" data-act="i-go" aria-label="Erklärung überspringen">${icon('skip')}</button>` : ''}</div>`, view.steps.length, view.i);
+  AFTER.intro = () => {
+    const st = view.steps[view.i];
+    later(st.say, st.at || 400);
+    if (st.say2) later(st.say2, (st.at || 400) + 1300);
+    later(() => {
+      if (view.i + 1 < view.steps.length) { view.i += 1; return render(); }
+      seen[`${view.id}/${view.t}`] = true; store.set('seen', seen);
+      $('#icta').innerHTML = introDone();
+    }, st.dur);
+  };
+
+  /* ---------- Karten der Woche: frei blättern, nichts wird abgefragt ---------- */
+  function cardsOf(L) {
+    const l = letterOf(L.letter);
+    const cards = [{ html: `<span class="ar kl">${l.ch}</span>`, ar: l.name, de: 'Buchstabe ' + l.tr, say: () => sayLetter(l) }];
+    wordsOf(l.id).forEach((w) => cards.push({ html: pic(w.art), ar: hl(w.ar), de: w.de, say: () => sayWord(w) }));
+    if (L.threads.includes('bewegung')) bewegung().items.forEach((x) => cards.push({ html: pic('bewegung/' + x.id), ar: x.ar, de: x.de, say: () => speak('bewegung/' + x.id, x.ar) }));
+    if (L.threads.includes('sinne')) {
+      sinne().items.forEach((x) => cards.push({ html: pic('sinne/' + x.id), ar: x.ar, de: x.de, say: () => speak('sinne/' + x.id, x.ar) }));
+      sinne().extra.forEach((x) => cards.push({ html: pic('dinge/' + x.id), ar: x.ar, de: x.de, say: () => speak('sinne/' + x.id, x.ar) }));
+    }
+    if (L.threads.includes('gegensatz')) KHAIT_PAIRS.forEach((p) => cards.push({ html: `<div class="pic ${p.kind} ${p.pick}">${p.kind === 'size' ? pic('tiere/elefant') : pencil(p.pick === 'big' ? 92 : 40)}</div>`, ar: p.ar, de: p.de, say: () => speak('khait/' + p.id, p.ar) }));
+    return cards;
+  }
+  RENDER.karten = () => {
+    const cards = cardsOf(lessonOf(view.id)), c = cards[view.i];
+    return `<header class="top"><button class="round" data-act="week" aria-label="Zurück">${icon('back')}</button><span class="count">${view.i + 1} / ${cards.length}</span><span class="sp"></span></header>
+      <div class="karten"><button class="round big" data-act="k-prev" ${view.i === 0 ? 'disabled' : ''} aria-label="Vorherige Karte">${icon('back')}</button>
+      <button class="kcard" data-act="k-say" aria-label="Anhören"><div class="pic">${c.html}</div><span class="ar">${c.ar}</span><small>${c.de}</small></button>
+      <button class="round big" data-act="k-next" ${view.i === cards.length - 1 ? 'disabled' : ''} aria-label="Nächste Karte">${icon('next')}</button></div>`;
+  };
+  AFTER.karten = () => later(() => cardsOf(lessonOf(view.id))[view.i].say(), 250);
+
   /* ---------- Elternbereich ---------- */
   RENDER.parent = () => {
     const weeks = [...KHAIT_LESSONS].reverse().map((L) => {
@@ -461,6 +539,7 @@
     return `<div class="parent"><header class="top"><button class="round" data-act="home" aria-label="Schließen">${icon('back')}</button><strong>Für Eltern</strong><span class="sp"></span></header>
       <section class="pweek idea"><h2>Die Idee</h2><p>Jede Schulwoche ist ein Stickmotiv. Fünf kurze Übungen sind fünf Fäden. Der letzte Faden gehört ihr als Lehrerin.</p></section>
       <section class="pweek"><h2>Einstellungen</h2>
+      <label class="set"><span><b>Erklär-Animation vor jedem Faden</b><small>Zeigt erst, worum es geht, bevor gefragt wird. Ab dem zweiten Mal überspringbar.</small></span><input type="checkbox" class="sw" data-set="intro" ${settings.intro ? 'checked' : ''}></label>
       <label class="set"><span><b>Freie Reihenfolge</b><small>Alle Fäden einer Woche sind sofort offen. Aus: ein Faden nach dem anderen.</small></span><input type="checkbox" class="sw" data-set="free" ${settings.free ? 'checked' : ''}></label>
       <label class="set"><span><b>Ein neuer Faden pro Tag</b><small>Pro Motiv nur ein neuer Faden am Tag, der nächste schläft bis morgen. Verteilt das Üben über die Woche.</small></span><input type="checkbox" class="sw" data-set="daily" ${settings.daily ? 'checked' : ''}></label>
       <label class="set"><span><b>Langsam sprechen</b><small>Gilt für die Sprachausgabe, nicht für eigene Aufnahmen.</small></span><input type="checkbox" class="sw" data-set="slow" ${settings.slow ? 'checked' : ''}></label>
@@ -479,17 +558,24 @@
     'say-letter': () => sayLetter(letterOf(lessonOf(view.id).letter)),
     thread: (el) => {
       const s = el.dataset.state;
-      if (s === 'ready' || s === 'done') return START[el.dataset.t](lessonOf(view.id));
+      if (s === 'ready' || s === 'done') return startThread(lessonOf(view.id), el.dataset.t);
       wrong(el); pluck(0, 0.08);
       $('#hint').textContent = s === 'asleep' ? 'Der nächste Faden schläft bis morgen. Fertige Fäden kannst du noch einmal spielen.' : 'Ein Faden nach dem anderen.';
     },
     finish,
+    'intro-again': () => { const L = lessonOf(view.id), t = view.t; go({ name: 'intro', id: L.id, t, steps: INTRO[t](L), i: 0 }); },
+    'i-say': () => view.steps[view.i].say(),
+    'i-go': () => START[view.t](lessonOf(view.id)),
+    karten: () => go({ name: 'karten', id: view.id, i: 0 }),
+    'k-say': () => cardsOf(lessonOf(view.id))[view.i].say(),
+    'k-prev': () => { if (view.i > 0) { view.i -= 1; render(); } },
+    'k-next': () => { if (view.i + 1 < cardsOf(lessonOf(view.id)).length) { view.i += 1; render(); } },
     'h-word': (el) => { const k = Number(el.dataset.k); sayWord(view.words[k]); if (!view.heard.includes(k)) { view.heard.push(k); pluck(k); render(); } },
     'p-say': () => sayLetter(letterOf(view.targets[view.i])),
     'f-pick': (el) => {
       const c = view.cells[Number(el.dataset.k)], l = letterOf(lessonOf(view.id).letter);
       if (c.hit || view.busy) return;
-      if (c.ch !== l.ch) return wrong(el);
+      if (c.ch !== l.ch) { wrong(el); app.querySelectorAll('.fl:not(.hit)').forEach((x) => { if (x.textContent === l.ch) { x.classList.remove('showok'); void x.offsetWidth; x.classList.add('showok'); } }); return sayLetter(l); }
       c.hit = true; view.left -= 1; pluck(5 - view.left); sayLetter(l); render();
       if (view.left === 0) { view.busy = true; praise(); later(finish, 1500); }
     },
@@ -497,7 +583,7 @@
     'q-pick': (el) => {
       if (view.busy) return;
       const r = view.rounds[view.i];
-      if (r.options[Number(el.dataset.k)].key !== r.target.key) return wrong(el);
+      if (r.options[Number(el.dataset.k)].key !== r.target.key) return miss(el, $(`.opt[data-k="${r.options.indexOf(r.target)}"]`), () => sayWord(r.target));
       view.busy = true; el.classList.add('ok'); praise(); sayWord(r.target);
       later(() => { if (view.i + 1 >= view.rounds.length) return finish(); view.i += 1; view.busy = false; render(); sayWord(view.rounds[view.i].target); }, 1600);
     },
@@ -505,7 +591,7 @@
     's-pick': (el) => {
       if (view.busy) return;
       const r = view.rounds[view.i];
-      if (el.dataset.id !== r.sense) return wrong(el);
+      if (el.dataset.id !== r.sense) return miss(el, $(`.opt[data-id="${r.sense}"]`), ACT['s-say']);
       const part = sinne().items.find((x) => x.id === r.sense);
       view.busy = true; el.classList.add('ok'); praise(); speak('sinne/' + part.id, part.ar);
       later(() => { if (view.i + 1 >= view.rounds.length) return finish(); view.i += 1; view.busy = false; render(); ACT['s-say'](); }, 1700);
@@ -514,7 +600,7 @@
     'g-pick': (el) => {
       if (view.busy) return;
       const r = view.rounds[view.i];
-      if (el.dataset.w !== r.p.pick) return wrong(el);
+      if (el.dataset.w !== r.p.pick) return miss(el, $(`.opt[data-w="${r.p.pick}"]`), ACT['g-say']);
       view.busy = true; el.classList.add('ok'); praise(); ACT['g-say']();
       later(() => { if (view.i + 1 >= view.rounds.length) return finish(); view.i += 1; view.busy = false; render(); ACT['g-say'](); }, 1700);
     },
